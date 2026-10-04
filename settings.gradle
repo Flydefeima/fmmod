@@ -1,3 +1,4 @@
+// settings.gradle
 pluginManagement {
     repositories {
         gradlePluginPortal()
@@ -5,9 +6,8 @@ pluginManagement {
             name = 'MinecraftForge'
             url = 'https://maven.minecraftforge.net/'
         }
+        mavenCentral()
     }
 }
 
-plugins {
-    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.7.0'
-}
+rootProject.name = 'fmmod' // 确保这行在 pluginManagement 之后

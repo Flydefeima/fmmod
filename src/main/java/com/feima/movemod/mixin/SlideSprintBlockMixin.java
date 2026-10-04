@@ -32,6 +32,7 @@ public abstract class SlideSprintBlockMixin {
     private void fmm$blockSprintWhileSliding(boolean sprinting, CallbackInfo ci) {
         if (!sprinting) return;
         if (!MoveConfig.INSTANCE.enabled.get()) return;
+        if (!MoveConfig.INSTANCE.slideEnabled.get()) return;
         if (!((Object) this instanceof Player player)) return;
 
         if (SlideAction.INSTANCE.isSliding(player)) {

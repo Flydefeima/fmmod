@@ -5,12 +5,22 @@
   "compatibilityLevel": "JAVA_17",
   "refmap": "feimamovemod.refmap.json",
   "mixins": [
-    "PlayerHitboxMixin",
-    "PlayerSlideMixin",
-    "PlayerPoseMixin",
     "EyeHeightMixin",
+    "PlayerHitboxMixin",
+    "PlayerPoseMixin",
+    "PlayerSlideMixin",
+    "PlayerSprintParticleInvoker",
     "SlideSprintBlockMixin",
-    "SlideTravelMixin"
+    "SlideTravelMixin",
+    "PeekEyeMixin",
+    "PeekProjectileMixin",
+    "PeekExplosionMixin",
+    "PeekBodyRotMixin"
+  ],
+  "client": [
+    "PeekCameraMixin",
+    "PeekFullBodyMixin",
+    "PeekHitboxRenderMixin"
   ],
   "injectors": {
     "defaultRequire": 1

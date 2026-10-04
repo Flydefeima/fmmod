@@ -1,9 +1,9 @@
 package com.feima.movemod.action;
 
+import com.feima.movemod.client.SlideClientHelper;
 import com.feima.movemod.config.MoveConfig;
+import com.feima.movemod.mixin.PlayerSprintParticleInvoker;
 import com.feima.movemod.network.NetworkHandler;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
@@ -20,10 +20,6 @@ public final class SlideAction {
     private static final double MIN_SPEED = 1.0E-4;
     private static final int SPEED_RESYNC_TICKS = 5;
 
-    /** 撞墙判定阈值：实际水平位移 / 上一 tick 写入速度，低于此值视为撞墙。 */
-    private static final double WALL_STOP_RATIO = 0.3D;
-
-    /** 滑铲启动前向正前方探测的距离（方块）。 */
     private static final double SPACE_CHECK_DIST = 0.35D;
 
     private final Map<UUID, State> serverStates = new ConcurrentHashMap<>();
@@ -61,7 +57,7 @@ public final class SlideAction {
         return true;
     }
 
-    public boolean tryStartClient(LocalPlayer player) {
+    public boolean tryStartClient(Player player) {
         if (!player.level().isClientSide) return false;
         if (clientStates.containsKey(player.getUUID())) return false;
         if (!canStart(player)) return false;
@@ -71,20 +67,20 @@ public final class SlideAction {
 
     private boolean canStart(Player player) {
         if (!MoveConfig.INSTANCE.enabled.get()) return false;
+        if (!MoveConfig.INSTANCE.slideEnabled.get()) return false;
         if (player.isSpectator() || player.isDeadOrDying()) return false;
+        // 与趴下互斥
+        if (CrawlAction.INSTANCE.isCrawling(player)) return false;
+        // 与探头互斥
+        if (PeekAction.INSTANCE.isPeeking(player)) return false;
+        // 触发时必须在场地上（之后的空中阶段不再检查）
         if (!player.onGround()) return false;
         if (isTriggerOnCd(player)) return false;
 
-        // 需要疾跑（可配置）
         if (MoveConfig.INSTANCE.requireSprint.get() && !player.isSprinting()) return false;
-
-        // 需要向前移动输入（后退 / 侧移 / 静止都不触发）
         if (!hasForwardInput(player)) return false;
-
-        // 前方需要有足够空间，避免贴墙启动时模型抖动
         if (!hasSpaceToSlide(player)) return false;
 
-        // 耐力不足且未开启"空耐力也能滑" → 拒绝
         if (!MoveConfig.INSTANCE.allowWhenEmpty.get()
                 && MoveConfig.INSTANCE.staminaEnabled.get()
                 && !StaminaTracker.INSTANCE.canStart(player)) {
@@ -94,27 +90,11 @@ public final class SlideAction {
         return true;
     }
 
-    /**
-     * 是否按下了"前进"键。
-     * <p>
-     * 直接读物理按键 {@code keyUp.isDown()}，不用 {@code forwardImpulse}：
-     * 后者由 {@code Input.tick()} 写入，边沿帧会读到 0，导致误判。
-     * <p>
-     * 服务端拿不到玩家按键，直接放行；客户端已在发包前严格预检。
-     */
     private boolean hasForwardInput(Player player) {
-        if (!(player instanceof LocalPlayer)) return true;
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.options == null) return true;
-        return mc.options.keyUp.isDown();
+        if (!player.level().isClientSide) return true;
+        return SlideClientHelper.hasForwardInput();
     }
 
-    /**
-     * 前方是否有滑铲碰撞箱能通过的空间。
-     * <p>
-     * 以玩家为起点、朝向前方 {@link #SPACE_CHECK_DIST} 格处，
-     * 用滑铲尺寸的 AABB 做碰撞检测。贴墙时不通过，避免启动瞬间抖动。
-     */
     private boolean hasSpaceToSlide(Player player) {
         double w = MoveConfig.INSTANCE.hitboxWidth.get() / 2.0D;
         double h = MoveConfig.INSTANCE.hitboxHeight.get();
@@ -145,8 +125,6 @@ public final class SlideAction {
                 player, MoveConfig.INSTANCE.staminaCostOnStart.get());
 
         State state = new State(yaw, speed);
-        state.lastEndX = player.getX();
-        state.lastEndZ = player.getZ();
         states(player).put(player.getUUID(), state);
         setTriggerCd(player);
         player.refreshDimensions();
@@ -156,7 +134,9 @@ public final class SlideAction {
     // 滑铲跳
     // ============================================================
     public boolean trySlideJump(Player player) {
-        if (player.level().isClientSide && !(player instanceof LocalPlayer)) return false;
+        if (player.level().isClientSide && !SlideClientHelper.isLocalPlayer(player)) {
+            return false;
+        }
 
         State state = states(player).get(player.getUUID());
         if (state == null) return false;
@@ -185,10 +165,11 @@ public final class SlideAction {
     // ============================================================
     // 远端同步
     // ============================================================
-    public void applyRemoteState(Player player, boolean sliding, double stamina, double speed) {
+    public void applyRemoteState(Player player, boolean sliding, double stamina,
+                                 double speed, boolean rejected) {
         if (!player.level().isClientSide) return;
 
-        if (player instanceof LocalPlayer) {
+        if (SlideClientHelper.isLocalPlayer(player)) {
             if (MoveConfig.INSTANCE.staminaEnabled.get()) {
                 StaminaTracker.INSTANCE.set(player, stamina);
             }
@@ -196,11 +177,7 @@ public final class SlideAction {
             if (sliding) {
                 State state = clientStates.get(player.getUUID());
                 if (state == null) {
-                    // 客户端预测被拒 / 未建立本地状态，但服务端权威接受了
-                    // → 补建本地状态，让动画 / HUD / 本地速度覆盖生效
                     state = new State(player.getYRot(), speed);
-                    state.lastEndX = player.getX();
-                    state.lastEndZ = player.getZ();
                     clientStates.put(player.getUUID(), state);
                     player.refreshDimensions();
                 } else if (state.ticks <= SPEED_RESYNC_TICKS) {
@@ -210,6 +187,9 @@ public final class SlideAction {
                 if (clientStates.remove(player.getUUID()) != null) {
                     player.refreshDimensions();
                 }
+                if (rejected) {
+                    clientTriggerCds.remove(player.getUUID());
+                }
             }
             return;
         }
@@ -217,8 +197,6 @@ public final class SlideAction {
         if (sliding) {
             if (clientStates.containsKey(player.getUUID())) return;
             State s = new State(player.getYRot(), 0.0D);
-            s.lastEndX = player.getX();
-            s.lastEndZ = player.getZ();
             clientStates.put(player.getUUID(), s);
             player.refreshDimensions();
         } else {
@@ -232,7 +210,7 @@ public final class SlideAction {
     // Tick
     // ============================================================
     public void tick(Player player) {
-        if (player.level().isClientSide && !(player instanceof LocalPlayer)) return;
+        if (player.level().isClientSide && !SlideClientHelper.isLocalPlayer(player)) return;
 
         tickTriggerCd(player);
         StaminaTracker.INSTANCE.tick(player);
@@ -242,18 +220,12 @@ public final class SlideAction {
 
         state.ticks++;
 
-        // ---- 撞墙检测（硬编码阈值 WALL_STOP_RATIO）----
-        if (state.ticks > 1) {
-            double dx = player.getX() - state.lastEndX;
-            double dz = player.getZ() - state.lastEndZ;
-            double actualH = Math.sqrt(dx * dx + dz * dz);
-            if (actualH < state.lastAppliedSpeed * WALL_STOP_RATIO) {
-                stop(player);
-                return;
-            }
+        // 撞墙 = 主动结束（空中不会触发水平碰撞，所以不影响空中滑铲）
+        if (player.horizontalCollision) {
+            stop(player);
+            return;
         }
 
-        // ---- 耐力持续消耗 ----
         if (MoveConfig.INSTANCE.staminaEnabled.get()) {
             double perTick = MoveConfig.INSTANCE.staminaCostPerTick.get();
             if (perTick > 0.0D) {
@@ -266,7 +238,6 @@ public final class SlideAction {
             }
         }
 
-        // ---- 饥饿消耗 ----
         if (MoveConfig.INSTANCE.hungerEnabled.get()) {
             double exhaust = MoveConfig.INSTANCE.hungerPerTick.get();
             if (exhaust > 0.0D) {
@@ -274,12 +245,17 @@ public final class SlideAction {
             }
         }
 
-        // ---- 方向：锥形限幅 + 角惯性 ----
         if (MoveConfig.INSTANCE.followLook.get()) {
-            float deltaYaw = Mth.wrapDegrees(player.getYRot() - state.initialYaw);
+            float deltaYaw   = Mth.wrapDegrees(player.getYRot() - state.initialYaw);
             double maxOffset = MoveConfig.INSTANCE.maxTurnOffset.get();
+            double zeroYaw   = MoveConfig.INSTANCE.turnOffsetZeroYaw.get();
 
-            double targetOffset = Mth.clamp(deltaYaw, -maxOffset, maxOffset);
+            // 视角偏移超过阈值 → 转向偏移归零（滑铲方向回到初始方向）。
+            // 否则按 maxTurnOffset 截断。
+            double targetOffset = (Math.abs(deltaYaw) > zeroYaw)
+                    ? 0.0D
+                    : Mth.clamp(deltaYaw, -maxOffset, maxOffset);
+
             float targetYaw = Mth.wrapDegrees((float) (state.initialYaw + targetOffset));
 
             float maxStep = MoveConfig.INSTANCE.turnSpeed.get().floatValue();
@@ -295,7 +271,6 @@ public final class SlideAction {
             state.direction = yawToHorizontal(state.currentYaw);
         }
 
-        // ---- 写入运动 ----
         Vec3 motion = player.getDeltaMovement();
         player.setDeltaMovement(
                 state.direction.x * state.speed,
@@ -303,9 +278,11 @@ public final class SlideAction {
                 state.direction.z * state.speed
         );
 
-        state.lastAppliedSpeed = state.speed;
-        state.lastEndX = player.getX();
-        state.lastEndZ = player.getZ();
+        if (MoveConfig.INSTANCE.slideParticle.get()
+                && player.onGround()
+                && player instanceof PlayerSprintParticleInvoker invoker) {
+            invoker.fmm$spawnSprintParticle();
+        }
 
         int decayDelay  = MoveConfig.INSTANCE.decayDelay.get();
         double friction = MoveConfig.INSTANCE.friction.get();
@@ -313,7 +290,10 @@ public final class SlideAction {
 
         if (state.ticks >= decayDelay) state.speed *= friction;
 
-        if (state.speed <= endSpeed || state.speed < MIN_SPEED || !player.onGround()) {
+        // 注意：这里不再有 !player.onGround()。
+        // 空中滑铲保留状态，速度按 friction 自然衰减，
+        // 直到速度 ≤ endSpeed 或 < MIN_SPEED 才结束。
+        if (state.speed <= endSpeed || state.speed < MIN_SPEED) {
             stop(player);
         }
     }
@@ -373,9 +353,6 @@ public final class SlideAction {
         float currentYaw;
         double speed;
         int ticks;
-        double lastAppliedSpeed;
-        double lastEndX;
-        double lastEndZ;
 
         State(float yaw, double speed) {
             this.initialYaw = yaw;

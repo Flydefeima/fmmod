@@ -22,6 +22,7 @@ public abstract class EyeHeightMixin {
     ) {
         if (!((Object) this instanceof Player)) return;
         if (!MoveConfig.INSTANCE.enabled.get()) return;
+        if (!MoveConfig.INSTANCE.slideEnabled.get()) return;
 
         Player self = (Player) (Object) this;
         if (SlideAction.INSTANCE.isSliding(self)) {

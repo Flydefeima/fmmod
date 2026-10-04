@@ -1,6 +1,7 @@
 package com.feima.movemod.network;
 
 import com.feima.movemod.FeimaMoveMod;
+import com.feima.movemod.action.PeekAction;
 import com.feima.movemod.action.SlideAction;
 import com.feima.movemod.action.StaminaTracker;
 import net.minecraft.resources.ResourceLocation;
@@ -17,13 +18,14 @@ public final class NetworkHandler {
 
     private NetworkHandler() {}
 
-    private static final String PROTOCOL = "1";
+    /** 协议版本：新增 Peek 包，从 2 升到 3。 */
+    private static final String PROTOCOL = "3";
 
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(FeimaMoveMod.MODID, "main"),
             () -> PROTOCOL,
-            PROTOCOL::equals,
-            PROTOCOL::equals
+            NetworkRegistry.acceptMissingOr(PROTOCOL::equals),
+            NetworkRegistry.acceptMissingOr(PROTOCOL::equals)
     );
 
     public static void register() {
@@ -38,6 +40,10 @@ public final class NetworkHandler {
                 CrawlSetPacket::encode, CrawlSetPacket::decode, CrawlSetPacket::handle);
         CHANNEL.registerMessage(id++, CrawlStatePacket.class,
                 CrawlStatePacket::encode, CrawlStatePacket::decode, CrawlStatePacket::handle);
+        CHANNEL.registerMessage(id++, PeekSetPacket.class,
+                PeekSetPacket::encode, PeekSetPacket::decode, PeekSetPacket::handle);
+        CHANNEL.registerMessage(id++, PeekStatePacket.class,
+                PeekStatePacket::encode, PeekStatePacket::decode, PeekStatePacket::handle);
     }
 
     // ============================================================
@@ -55,6 +61,10 @@ public final class NetworkHandler {
         CHANNEL.sendToServer(new CrawlSetPacket(crawling));
     }
 
+    public static void sendPeekSet(PeekAction.Dir dir) {
+        CHANNEL.sendToServer(new PeekSetPacket(dir));
+    }
+
     // ============================================================
     // S2C
     // ============================================================
@@ -69,7 +79,7 @@ public final class NetworkHandler {
         }
         CHANNEL.send(
                 PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> entity),
-                new SlideStatePacket(entity.getUUID(), sliding, stamina, speed)
+                new SlideStatePacket(entity.getUUID(), sliding, stamina, speed, false)
         );
     }
 
@@ -78,7 +88,7 @@ public final class NetworkHandler {
         double stamina = StaminaTracker.INSTANCE.get(player);
         CHANNEL.send(
                 PacketDistributor.PLAYER.with(() -> player),
-                new SlideStatePacket(id, false, stamina, 0.0D)
+                new SlideStatePacket(id, false, stamina, 0.0D, true)
         );
     }
 
@@ -93,6 +103,20 @@ public final class NetworkHandler {
         CHANNEL.send(
                 PacketDistributor.PLAYER.with(() -> player),
                 new CrawlStatePacket(player.getUUID(), false)
+        );
+    }
+
+    public static void broadcastPeekState(Entity entity, PeekAction.Dir dir) {
+        CHANNEL.send(
+                PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> entity),
+                new PeekStatePacket(entity.getUUID(), dir, false)
+        );
+    }
+
+    public static void sendPeekReject(ServerPlayer player) {
+        CHANNEL.send(
+                PacketDistributor.PLAYER.with(() -> player),
+                new PeekStatePacket(player.getUUID(), PeekAction.Dir.NONE, true)
         );
     }
 }

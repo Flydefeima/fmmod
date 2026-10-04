@@ -6,14 +6,40 @@
     "com/feima/movemod/mixin/PlayerSlideMixin": {
       "tick": "Lnet/minecraft/world/entity/player/Player;m_8119_()V"
     },
+    "com/feima/movemod/mixin/PeekEyeMixin": {
+      "getEyePosition(F)Lnet/minecraft/world/phys/Vec3;": "Lnet/minecraft/world/entity/Entity;m_20299_(F)Lnet/minecraft/world/phys/Vec3;"
+    },
+    "com/feima/movemod/mixin/PeekFullBodyMixin": {
+      "setupAnim": "Lnet/minecraft/client/model/HumanoidModel;m_6973_(Lnet/minecraft/world/entity/LivingEntity;FFFFF)V"
+    },
+    "com/feima/movemod/mixin/PeekHitboxRenderMixin": {
+      "renderHitbox": "Lnet/minecraft/client/renderer/entity/EntityRenderDispatcher;m_114441_(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;Lnet/minecraft/world/entity/Entity;F)V"
+    },
+    "com/feima/movemod/mixin/PeekProjectileMixin": {
+      "getEntityHitResult(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/AABB;Ljava/util/function/Predicate;D)Lnet/minecraft/world/phys/EntityHitResult;": "Lnet/minecraft/world/entity/projectile/ProjectileUtil;m_37287_(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/AABB;Ljava/util/function/Predicate;D)Lnet/minecraft/world/phys/EntityHitResult;",
+      "getEntityHitResult(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/AABB;Ljava/util/function/Predicate;F)Lnet/minecraft/world/phys/EntityHitResult;": "Lnet/minecraft/world/entity/projectile/ProjectileUtil;m_150175_(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/AABB;Ljava/util/function/Predicate;F)Lnet/minecraft/world/phys/EntityHitResult;",
+      "getEntityHitResult(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/AABB;Ljava/util/function/Predicate;)Lnet/minecraft/world/phys/EntityHitResult;": "Lnet/minecraft/world/entity/projectile/ProjectileUtil;m_37304_(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/AABB;Ljava/util/function/Predicate;)Lnet/minecraft/world/phys/EntityHitResult;"
+    },
     "com/feima/movemod/mixin/SlideTravelMixin": {
       "travel": "Lnet/minecraft/world/entity/LivingEntity;m_7023_(Lnet/minecraft/world/phys/Vec3;)V"
+    },
+    "com/feima/movemod/mixin/PlayerSprintParticleInvoker": {
+      "spawnSprintParticle": "m_20076_()V"
+    },
+    "com/feima/movemod/mixin/PeekCameraMixin": {
+      "setup": "Lnet/minecraft/client/Camera;m_90575_(Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/world/entity/Entity;ZZF)V"
+    },
+    "com/feima/movemod/mixin/PeekExplosionMixin": {
+      "getSeenPercent": "Lnet/minecraft/world/level/Explosion;m_46064_(Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/entity/Entity;)F"
     },
     "com/feima/movemod/mixin/PlayerHitboxMixin": {
       "getDimensions": "Lnet/minecraft/world/entity/player/Player;m_6972_(Lnet/minecraft/world/entity/Pose;)Lnet/minecraft/world/entity/EntityDimensions;"
     },
     "com/feima/movemod/mixin/EyeHeightMixin": {
       "getEyeHeight": "Lnet/minecraft/world/entity/LivingEntity;m_6380_(Lnet/minecraft/world/entity/Pose;Lnet/minecraft/world/entity/EntityDimensions;)F"
+    },
+    "com/feima/movemod/mixin/PeekBodyRotMixin": {
+      "tick": "Lnet/minecraft/world/entity/LivingEntity;m_8119_()V"
     },
     "com/feima/movemod/mixin/SlideSprintBlockMixin": {
       "setSprinting": "Lnet/minecraft/world/entity/LivingEntity;m_6858_(Z)V"
@@ -27,14 +53,40 @@
       "com/feima/movemod/mixin/PlayerSlideMixin": {
         "tick": "Lnet/minecraft/world/entity/player/Player;m_8119_()V"
       },
+      "com/feima/movemod/mixin/PeekEyeMixin": {
+        "getEyePosition(F)Lnet/minecraft/world/phys/Vec3;": "Lnet/minecraft/world/entity/Entity;m_20299_(F)Lnet/minecraft/world/phys/Vec3;"
+      },
+      "com/feima/movemod/mixin/PeekFullBodyMixin": {
+        "setupAnim": "Lnet/minecraft/client/model/HumanoidModel;m_6973_(Lnet/minecraft/world/entity/LivingEntity;FFFFF)V"
+      },
+      "com/feima/movemod/mixin/PeekHitboxRenderMixin": {
+        "renderHitbox": "Lnet/minecraft/client/renderer/entity/EntityRenderDispatcher;m_114441_(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;Lnet/minecraft/world/entity/Entity;F)V"
+      },
+      "com/feima/movemod/mixin/PeekProjectileMixin": {
+        "getEntityHitResult(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/AABB;Ljava/util/function/Predicate;D)Lnet/minecraft/world/phys/EntityHitResult;": "Lnet/minecraft/world/entity/projectile/ProjectileUtil;m_37287_(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/AABB;Ljava/util/function/Predicate;D)Lnet/minecraft/world/phys/EntityHitResult;",
+        "getEntityHitResult(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/AABB;Ljava/util/function/Predicate;F)Lnet/minecraft/world/phys/EntityHitResult;": "Lnet/minecraft/world/entity/projectile/ProjectileUtil;m_150175_(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/AABB;Ljava/util/function/Predicate;F)Lnet/minecraft/world/phys/EntityHitResult;",
+        "getEntityHitResult(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/AABB;Ljava/util/function/Predicate;)Lnet/minecraft/world/phys/EntityHitResult;": "Lnet/minecraft/world/entity/projectile/ProjectileUtil;m_37304_(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/AABB;Ljava/util/function/Predicate;)Lnet/minecraft/world/phys/EntityHitResult;"
+      },
       "com/feima/movemod/mixin/SlideTravelMixin": {
         "travel": "Lnet/minecraft/world/entity/LivingEntity;m_7023_(Lnet/minecraft/world/phys/Vec3;)V"
+      },
+      "com/feima/movemod/mixin/PlayerSprintParticleInvoker": {
+        "spawnSprintParticle": "m_20076_()V"
+      },
+      "com/feima/movemod/mixin/PeekCameraMixin": {
+        "setup": "Lnet/minecraft/client/Camera;m_90575_(Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/world/entity/Entity;ZZF)V"
+      },
+      "com/feima/movemod/mixin/PeekExplosionMixin": {
+        "getSeenPercent": "Lnet/minecraft/world/level/Explosion;m_46064_(Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/entity/Entity;)F"
       },
       "com/feima/movemod/mixin/PlayerHitboxMixin": {
         "getDimensions": "Lnet/minecraft/world/entity/player/Player;m_6972_(Lnet/minecraft/world/entity/Pose;)Lnet/minecraft/world/entity/EntityDimensions;"
       },
       "com/feima/movemod/mixin/EyeHeightMixin": {
         "getEyeHeight": "Lnet/minecraft/world/entity/LivingEntity;m_6380_(Lnet/minecraft/world/entity/Pose;Lnet/minecraft/world/entity/EntityDimensions;)F"
+      },
+      "com/feima/movemod/mixin/PeekBodyRotMixin": {
+        "tick": "Lnet/minecraft/world/entity/LivingEntity;m_8119_()V"
       },
       "com/feima/movemod/mixin/SlideSprintBlockMixin": {
         "setSprinting": "Lnet/minecraft/world/entity/LivingEntity;m_6858_(Z)V"

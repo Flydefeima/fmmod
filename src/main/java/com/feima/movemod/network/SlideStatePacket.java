@@ -13,10 +13,11 @@ import java.util.function.Supplier;
 
 /**
  * 服务端 → 客户端：同步某个玩家的滑铲状态 + 权威耐力 + 权威初速。
- * sliding = true  进入滑铲（speed 有效）
- * sliding = false 结束滑铲或本地玩家的请求被拒绝（speed 忽略）
- * stamina         服务端当前耐力
- * speed           服务端实际使用的滑铲初速
+ *
+ * <p>{@code sliding = true}：进入滑铲（speed 有效）。
+ * <p>{@code sliding = false}：结束滑铲。
+ * <p>{@code rejected = true}：本地玩家的请求被服务端拒绝，客户端应清理本地 CD 以允许立即重试。
+ * <p>其余情况 {@code rejected = false}。
  */
 public class SlideStatePacket {
 
@@ -24,12 +25,14 @@ public class SlideStatePacket {
     private final boolean sliding;
     private final double stamina;
     private final double speed;
+    private final boolean rejected;
 
-    public SlideStatePacket(UUID playerId, boolean sliding, double stamina, double speed) {
+    public SlideStatePacket(UUID playerId, boolean sliding, double stamina, double speed, boolean rejected) {
         this.playerId = playerId;
         this.sliding = sliding;
         this.stamina = stamina;
         this.speed = speed;
+        this.rejected = rejected;
     }
 
     public static void encode(SlideStatePacket msg, FriendlyByteBuf buf) {
@@ -37,6 +40,7 @@ public class SlideStatePacket {
         buf.writeBoolean(msg.sliding);
         buf.writeDouble(msg.stamina);
         buf.writeDouble(msg.speed);
+        buf.writeBoolean(msg.rejected);
     }
 
     public static SlideStatePacket decode(FriendlyByteBuf buf) {
@@ -44,7 +48,8 @@ public class SlideStatePacket {
                 buf.readUUID(),
                 buf.readBoolean(),
                 buf.readDouble(),
-                buf.readDouble()
+                buf.readDouble(),
+                buf.readBoolean()
         );
     }
 
@@ -64,6 +69,6 @@ public class SlideStatePacket {
         if (player == null) return;
 
         SlideAction.INSTANCE.applyRemoteState(
-                player, msg.sliding, msg.stamina, msg.speed);
+                player, msg.sliding, msg.stamina, msg.speed, msg.rejected);
     }
 }

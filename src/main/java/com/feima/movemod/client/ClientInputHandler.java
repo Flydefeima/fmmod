@@ -2,6 +2,7 @@ package com.feima.movemod.client;
 
 import com.feima.movemod.FeimaMoveMod;
 import com.feima.movemod.action.CrawlAction;
+import com.feima.movemod.action.PeekAction;
 import com.feima.movemod.action.SlideAction;
 import com.feima.movemod.network.NetworkHandler;
 import net.minecraft.client.Minecraft;
@@ -27,7 +28,6 @@ public final class ClientInputHandler {
         LocalPlayer player = mc.player;
 
         // ---- 滑铲键（C）----
-        // 只有本地预检通过才发包；本地拒绝则一切都不发生（服务端不会接到请求）。
         while (KeyBindings.SLIDE.consumeClick()) {
             if (player != null && SlideAction.INSTANCE.tryStartClient(player)) {
                 NetworkHandler.sendSlide();
@@ -43,6 +43,21 @@ public final class ClientInputHandler {
                 NetworkHandler.sendCrawlSet(false);
             } else if (CrawlAction.INSTANCE.tryStartClient(player)) {
                 NetworkHandler.sendCrawlSet(true);
+            }
+        }
+
+        // ---- 探头（按住 Q / E，二者互斥）----
+        if (player != null) {
+            boolean left  = KeyBindings.PEEK_LEFT.isDown();
+            boolean right = KeyBindings.PEEK_RIGHT.isDown();
+
+            PeekAction.Dir target = (left == right)
+                    ? PeekAction.Dir.NONE
+                    : (left ? PeekAction.Dir.LEFT : PeekAction.Dir.RIGHT);
+
+            if (target != PeekAction.INSTANCE.dir(player)
+                    && PeekAction.INSTANCE.trySet(player, target)) {
+                NetworkHandler.sendPeekSet(target);
             }
         }
 

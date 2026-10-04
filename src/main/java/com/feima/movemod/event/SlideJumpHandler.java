@@ -3,21 +3,18 @@ package com.feima.movemod.event;
 import com.feima.movemod.FeimaMoveMod;
 import com.feima.movemod.action.SlideAction;
 import net.minecraft.world.entity.player.Player;
+import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 /**
- * 监听跳跃事件，用于触发滑铲跳。
+ * 监听跳跃事件，用于触发滑铲跳。仅服务端注册。
  *
- * 时序说明：
- *   1. Player.tick() 内检查玩家跳跃 → 调 jumpFromGround() → 应用原版跳跃速度
- *   2. jumpFromGround() 末尾触发 LivingJumpEvent
- *   3. 这里 → trySlideJump()：取消滑铲、覆盖速度为滑铲跳速度、服务端广播
- *   4. Player.tick() 结束 → PlayerSlideMixin 的 TAIL 注入调 SlideAction.tick()
- *      此时滑铲状态已被移除，直接 return，不会再覆盖速度
+ * <p>客户端路径由 {@link com.feima.movemod.client.ClientInputHandler} 的按键边沿检测处理，
+ * 这里再注册客户端会造成重复调用（虽然幂等，但属于冗余路径）。
  */
-@Mod.EventBusSubscriber(modid = FeimaMoveMod.MODID)
+@Mod.EventBusSubscriber(modid = FeimaMoveMod.MODID, value = Dist.DEDICATED_SERVER)
 public final class SlideJumpHandler {
 
     private SlideJumpHandler() {}

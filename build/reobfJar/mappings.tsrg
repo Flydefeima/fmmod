@@ -1,4 +1,15 @@
 tsrg2 left right
+com/feima/movemod/mixin/PeekCameraMixin com/feima/movemod/mixin/PeekCameraMixin
+	getPosition ()Lnet/minecraft/world/phys/Vec3; m_90583_
+	setPosition (Lnet/minecraft/world/phys/Vec3;)V m_90581_
+com/feima/movemod/mixin/PeekFullBodyMixin com/feima/movemod/mixin/PeekFullBodyMixin
+	body f_102810_
+	hat f_102809_
+	head f_102808_
+	leftArm f_102812_
+	leftLeg f_102814_
+	rightArm f_102811_
+	rightLeg f_102813_
 com/feima/movemod/mixin/SlideTravelMixin com/feima/movemod/mixin/SlideTravelMixin
 	xxa f_20900_
 	zza f_20902_

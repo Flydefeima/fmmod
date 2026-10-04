@@ -1,5 +1,60 @@
 {
   "key.categories.feimamovemod": "Feima's Move Mod",
   "key.feimamovemod.slide": "Slide",
-  "key.feimamovemod.crawl": "Crawl"
+  "key.feimamovemod.crawl": "Crawl",
+  "key.feimamovemod.peek_left": "Peek Left",
+  "key.feimamovemod.peek_right": "Peek Right",
+
+  "feimamovemod.configuration.general.enabled": "Enable Mod",
+  "feimamovemod.configuration.general.slideEnabled": "Enable Slide",
+  "feimamovemod.configuration.general.crawlEnabled": "Enable Crawl",
+  "feimamovemod.configuration.general.peekEnabled": "Enable Peek",
+
+  "feimamovemod.configuration.slide.requireSprint": "Require Sprint",
+  "feimamovemod.configuration.slide.allowWhenEmpty": "Allow When Stamina Empty",
+  "feimamovemod.configuration.slide.slideParticle": "Slide Particles",
+  "feimamovemod.configuration.slide.startSpeed": "Initial Speed (Tier 1)",
+  "feimamovemod.configuration.slide.decayDelay": "Decay Delay",
+  "feimamovemod.configuration.slide.friction": "Friction",
+  "feimamovemod.configuration.slide.endSpeed": "End Speed",
+  "feimamovemod.configuration.slide.slideTriggerCd": "Trigger Cooldown",
+
+  "feimamovemod.configuration.slide.steering.followLook": "Follow Look Direction",
+  "feimamovemod.configuration.slide.steering.turnFactor": "Turn Factor",
+  "feimamovemod.configuration.slide.steering.maxTurnOffset": "Max Turn Offset",
+  "feimamovemod.configuration.slide.steering.turnOffsetZeroYaw": "Turn Offset Zero Yaw",
+  "feimamovemod.configuration.slide.steering.turnSpeed": "Turn Speed",
+
+  "feimamovemod.configuration.slide.jump.slideJumpForward": "Jump Forward Speed",
+  "feimamovemod.configuration.slide.jump.slideJumpUp": "Jump Upward Speed",
+  "feimamovemod.configuration.slide.jump.slideJumpFollowLook": "Jump Follows Look",
+
+  "feimamovemod.configuration.slide.stamina.enabled": "Enable Stamina",
+  "feimamovemod.configuration.slide.stamina.max": "Max Stamina",
+  "feimamovemod.configuration.slide.stamina.costOnStart": "Start Cost",
+  "feimamovemod.configuration.slide.stamina.costPerTick": "Cost Per Tick",
+  "feimamovemod.configuration.slide.stamina.regenPerTick": "Regen Per Tick",
+  "feimamovemod.configuration.slide.stamina.regenDelayTicks": "Regen Delay",
+  "feimamovemod.configuration.slide.stamina.thresholds.level1": "Tier 1 Threshold",
+  "feimamovemod.configuration.slide.stamina.thresholds.level2": "Tier 2 Threshold",
+  "feimamovemod.configuration.slide.stamina.speeds.level2Speed": "Tier 2 Speed",
+  "feimamovemod.configuration.slide.stamina.speeds.level3Speed": "Tier 3 Speed",
+
+  "feimamovemod.configuration.slide.hungerEnabled": "Enable Hunger Cost",
+  "feimamovemod.configuration.slide.hungerPerTick": "Hunger Per Tick",
+
+  "feimamovemod.configuration.slide.hitbox.hitboxWidth": "Hitbox Width",
+  "feimamovemod.configuration.slide.hitbox.hitboxHeight": "Hitbox Height",
+  "feimamovemod.configuration.slide.hitbox.eyeHeight": "Eye Height",
+
+  "feimamovemod.configuration.peek.distance": "Peek Lateral Offset",
+  "feimamovemod.configuration.peek.angleThirdPerson": "Third-Person Whole-Body Tilt Angle",
+  "feimamovemod.configuration.peek.angleFirstPerson": "First-Person Camera Roll Angle",
+  "feimamovemod.configuration.peek.transitionTicks": "Peek Transition Time (ticks)",
+  "feimamovemod.configuration.peek.modelOffset": "Third-Person Model Lateral Offset",
+
+  "feimamovemod.configuration.peek.hitbox.width": "Peek Hitbox Width",
+  "feimamovemod.configuration.peek.hitbox.height": "Peek Hitbox Height (Standing)",
+  "feimamovemod.configuration.peek.hitbox.crouchHeight": "Peek Hitbox Height (Crouching)",
+  "feimamovemod.configuration.peek.hitbox.offset": "Peek Hitbox Alignment Offset"
 }

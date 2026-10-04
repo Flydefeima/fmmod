@@ -1,5 +1,60 @@
 {
   "key.categories.feimamovemod": "Feima's Move Mod",
   "key.feimamovemod.slide": "滑铲",
-  "key.feimamovemod.crawl": "趴下"
+  "key.feimamovemod.crawl": "趴下",
+  "key.feimamovemod.peek_left": "探头（左）",
+  "key.feimamovemod.peek_right": "探头（右）",
+
+  "feimamovemod.configuration.general.enabled": "模组总开关",
+  "feimamovemod.configuration.general.slideEnabled": "启用滑铲",
+  "feimamovemod.configuration.general.crawlEnabled": "启用趴下",
+  "feimamovemod.configuration.general.peekEnabled": "启用探头",
+
+  "feimamovemod.configuration.slide.requireSprint": "需要疾跑",
+  "feimamovemod.configuration.slide.allowWhenEmpty": "空耐力允许滑铲",
+  "feimamovemod.configuration.slide.slideParticle": "滑铲粒子",
+  "feimamovemod.configuration.slide.startSpeed": "一档初速度",
+  "feimamovemod.configuration.slide.decayDelay": "衰减延迟",
+  "feimamovemod.configuration.slide.friction": "摩擦系数",
+  "feimamovemod.configuration.slide.endSpeed": "末速度",
+  "feimamovemod.configuration.slide.slideTriggerCd": "触发冷却",
+
+  "feimamovemod.configuration.slide.steering.followLook": "跟随视角",
+  "feimamovemod.configuration.slide.steering.turnFactor": "转向比例",
+  "feimamovemod.configuration.slide.steering.maxTurnOffset": "最大偏移角度",
+  "feimamovemod.configuration.slide.steering.turnOffsetZeroYaw": "偏移归零角度",
+  "feimamovemod.configuration.slide.steering.turnSpeed": "转向角速度",
+
+  "feimamovemod.configuration.slide.jump.slideJumpForward": "滑铲跳水平速度",
+  "feimamovemod.configuration.slide.jump.slideJumpUp": "滑铲跳向上速度",
+  "feimamovemod.configuration.slide.jump.slideJumpFollowLook": "滑铲跳跟随视角",
+
+  "feimamovemod.configuration.slide.stamina.enabled": "启用耐力",
+  "feimamovemod.configuration.slide.stamina.max": "耐力上限",
+  "feimamovemod.configuration.slide.stamina.costOnStart": "启动消耗",
+  "feimamovemod.configuration.slide.stamina.costPerTick": "每 tick 消耗",
+  "feimamovemod.configuration.slide.stamina.regenPerTick": "每 tick 恢复",
+  "feimamovemod.configuration.slide.stamina.regenDelayTicks": "恢复延迟",
+  "feimamovemod.configuration.slide.stamina.thresholds.level1": "一档阈值",
+  "feimamovemod.configuration.slide.stamina.thresholds.level2": "二档阈值",
+  "feimamovemod.configuration.slide.stamina.speeds.level2Speed": "二档速度",
+  "feimamovemod.configuration.slide.stamina.speeds.level3Speed": "三档速度",
+
+  "feimamovemod.configuration.slide.hungerEnabled": "启用饥饿消耗",
+  "feimamovemod.configuration.slide.hungerPerTick": "每 tick 疲劳度",
+
+  "feimamovemod.configuration.slide.hitbox.hitboxWidth": "碰撞箱宽度",
+  "feimamovemod.configuration.slide.hitbox.hitboxHeight": "碰撞箱高度",
+  "feimamovemod.configuration.slide.hitbox.eyeHeight": "眼睛高度",
+
+  "feimamovemod.configuration.peek.distance": "探头横向偏移（相机）",
+  "feimamovemod.configuration.peek.angleThirdPerson": "第三人称全身倾斜角度",
+  "feimamovemod.configuration.peek.angleFirstPerson": "第一人称相机倾斜角度",
+  "feimamovemod.configuration.peek.transitionTicks": "探头过渡时间（tick）",
+  "feimamovemod.configuration.peek.modelOffset": "第三人称模型横向偏移",
+
+  "feimamovemod.configuration.peek.hitbox.width": "探头碰撞箱宽度",
+  "feimamovemod.configuration.peek.hitbox.height": "探头碰撞箱高度（站立）",
+  "feimamovemod.configuration.peek.hitbox.crouchHeight": "探头碰撞箱高度（蹲下）",
+  "feimamovemod.configuration.peek.hitbox.offset": "探头碰撞箱对准偏移"
 }

@@ -14,14 +14,13 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 /**
- * 耐力数字显示 —— 临时占位方案。
+ * 耐力数字显示 —— 硬编码样式。
  *
- * 用类似 title 的大字号文字在屏幕上显示耐力，等有 HUD 美术资源后
- * 可以把 {@link #onRenderGui} 替换成画贴图条的版本，配置项保持不变。
- *
- * 显示逻辑：
- *   - alwaysShow = true  → 耐力未满时常驻
- *   - alwaysShow = false → 每次数值变化后 hold 一段时间再淡出
+ * 显示行为：
+ *   - 数值变化后保持 {@link #HOLD_TICKS} tick，再在 {@link #FADE_TICKS} tick 内淡出
+ *   - 位置：屏幕底部居中
+ *   - 颜色：白色，带阴影
+ *   - 字号缩放：{@link #SCALE}
  *
  * 数值来源：{@link StaminaTracker#get}（本地玩家双端同步过，权威）。
  */
@@ -30,9 +29,23 @@ public final class StaminaDisplay {
 
     private StaminaDisplay() {}
 
+    // ============================================================
+    // 硬编码显示参数
+    // ============================================================
+    /** 保持不透明的时间（tick） */
+    private static final int HOLD_TICKS = 20;
+    /** 淡出时间（tick） */
+    private static final int FADE_TICKS = 20;
+    /** 字号缩放 */
+    private static final float SCALE = 1.5F;
+    /** 颜色（0xRRGGBB） */
+    private static final int COLOR = 0xFFFFFF;
+    /** 是否绘制文字阴影 */
+    private static final boolean SHADOW = true;
+
     /** 上次显示过的整数值，用于检测变化。-1 表示尚未初始化 */
     private static int lastValue = -1;
-    /** 剩余保持 tick 数（变化后置为 holdTicks） */
+    /** 剩余保持 tick 数（变化后置为 HOLD_TICKS） */
     private static int holdRemaining = 0;
 
     // ============================================================
@@ -60,9 +73,7 @@ public final class StaminaDisplay {
 
         if (value != lastValue) {
             lastValue = value;
-            if (!MoveConfig.INSTANCE.staminaDisplayAlwaysShow.get()) {
-                holdRemaining = MoveConfig.INSTANCE.staminaDisplayHoldTicks.get();
-            }
+            holdRemaining = HOLD_TICKS;
         } else if (holdRemaining > 0) {
             holdRemaining--;
         }
@@ -79,72 +90,42 @@ public final class StaminaDisplay {
         LocalPlayer player = mc.player;
         if (player == null) return;
 
-        boolean alwaysShow = MoveConfig.INSTANCE.staminaDisplayAlwaysShow.get();
-        double max = StaminaTracker.INSTANCE.getMax();
-        double cur = StaminaTracker.INSTANCE.get(player);
-
-        // 常显模式下，满耐力不显示（避免总是糊在屏幕上）
-        if (alwaysShow && cur >= max) return;
-
-        // 变化淡出模式下，hold 用完就不再显示
-        if (!alwaysShow && holdRemaining <= 0) return;
+        // hold 用完就不再显示
+        if (holdRemaining <= 0) return;
 
         // ---- 透明度 ----
         int alpha = 255;
-        if (!alwaysShow) {
-            int fade = MoveConfig.INSTANCE.staminaDisplayFadeTicks.get();
-            if (fade > 0 && holdRemaining < fade) {
-                alpha = (int) (255L * holdRemaining / fade);
-            }
+        if (FADE_TICKS > 0 && holdRemaining < FADE_TICKS) {
+            alpha = (int) (255L * holdRemaining / FADE_TICKS);
         }
         if (alpha <= 0) return;
 
-        // ---- 文本 ----
-        String text = buildText(player, cur, max);
-        if (text.isEmpty()) return;
-
-        int rgb = parseColor(MoveConfig.INSTANCE.staminaDisplayColor.get());
-        int argb = (alpha << 24) | rgb;
-
-        float scale = MoveConfig.INSTANCE.staminaDisplayScale.get().floatValue();
-        boolean shadow = MoveConfig.INSTANCE.staminaDisplayShadow.get();
+        // ---- 文本：硬编码 value 模式 ----
+        String text = String.valueOf(Math.round(StaminaTracker.INSTANCE.get(player)));
+        int argb = (alpha << 24) | COLOR;
 
         GuiGraphics g = event.getGuiGraphics();
 
         int screenW = mc.getWindow().getGuiScaledWidth();
         int screenH = mc.getWindow().getGuiScaledHeight();
 
-        float cx, cy;
-        String pos = normalizePos(MoveConfig.INSTANCE.staminaDisplayPosition.get());
-        switch (pos) {
-            case "bottom" -> {
-                cx = screenW / 2.0F;
-                cy = screenH - 60.0F;
-            }
-            case "topleft" -> {
-                cx = 60.0F;
-                cy = 40.0F;
-            }
-            case "topright" -> {
-                cx = screenW - 60.0F;
-                cy = 40.0F;
-            }
-            default -> { // center
-                cx = screenW / 2.0F;
-                cy = screenH / 3.0F;
-            }
-        }
+        // 硬编码位置：屏幕底部居中
+        float cx = screenW / 2.0F;
+        float cy = screenH - 60.0F;
 
         int textW = mc.font.width(text);
         int lineH = mc.font.lineHeight;
 
         PoseStack pose = g.pose();
         pose.pushPose();
-        pose.translate(cx, cy, 0.0F);
-        pose.scale(scale, scale, 1.0F);
-        // 以 (cx, cy) 为中心绘制
-        g.drawString(mc.font, text, -textW / 2, -lineH / 2, argb, shadow);
-        pose.popPose();
+        try {
+            pose.translate(cx, cy, 0.0F);
+            pose.scale(SCALE, SCALE, 1.0F);
+            // 以 (cx, cy) 为中心绘制
+            g.drawString(mc.font, text, -textW / 2, -lineH / 2, argb, SHADOW);
+        } finally {
+            pose.popPose();
+        }
     }
 
     // ============================================================
@@ -152,53 +133,8 @@ public final class StaminaDisplay {
     // ============================================================
     private static boolean isEnabled() {
         if (!MoveConfig.INSTANCE.enabled.get()) return false;
+        if (!MoveConfig.INSTANCE.slideEnabled.get()) return false;
         if (!MoveConfig.INSTANCE.staminaEnabled.get()) return false;
-        if (!MoveConfig.INSTANCE.staminaDisplayEnabled.get()) return false;
         return true;
-    }
-
-    private static String buildText(LocalPlayer player, double cur, double max) {
-        String mode = MoveConfig.INSTANCE.staminaDisplayMode.get();
-        if (mode == null) mode = "value";
-
-        int value = (int) Math.round(cur);
-        int maxInt = (int) Math.round(max);
-
-        return switch (mode.toLowerCase()) {
-            case "valuemax" -> value + "/" + maxInt;
-            case "percent" -> {
-                int pct = max > 0.0D ? (int) Math.round(cur / max * 100.0D) : 0;
-                yield pct + "%";
-            }
-            case "level" -> levelRoman(StaminaTracker.INSTANCE.levelOf(player));
-            default -> String.valueOf(value); // value
-        };
-    }
-
-    private static String levelRoman(int level) {
-        return switch (level) {
-            case StaminaTracker.LEVEL_1 -> "I";
-            case StaminaTracker.LEVEL_2 -> "II";
-            default -> "III";
-        };
-    }
-
-    /** 解析 "#RRGGBB" 或 "RRGGBB" 为 0x00RRGGBB，非法时返回白色。 */
-    private static int parseColor(String s) {
-        if (s == null) return 0xFFFFFF;
-        s = s.trim();
-        if (s.startsWith("#")) s = s.substring(1);
-        if (s.length() != 6) return 0xFFFFFF;
-        try {
-            return Integer.parseInt(s, 16) & 0xFFFFFF;
-        } catch (NumberFormatException e) {
-            return 0xFFFFFF;
-        }
-    }
-
-    private static String normalizePos(String s) {
-        if (s == null) return "center";
-        // 把 top_left / TopLeft / top-left 都规整成 topleft
-        return s.trim().toLowerCase().replace("_", "").replace("-", "");
     }
 }

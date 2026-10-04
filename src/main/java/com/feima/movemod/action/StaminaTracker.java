@@ -54,18 +54,6 @@ public final class StaminaTracker {
         e.value = Math.max(0.0D, Math.min(getMax(), value));
     }
 
-    /** 严格消耗：不够则失败，不扣。返回是否成功。 */
-    public boolean consume(Player player, double amount) {
-        if (!MoveConfig.INSTANCE.staminaEnabled.get()) return true;
-        if (amount <= 0.0D) return true;
-
-        Entry e = data(player).computeIfAbsent(player.getUUID(), k -> new Entry(getMax()));
-        if (e.value < amount) return false;
-        e.value -= amount;
-        e.regenDelay = MoveConfig.INSTANCE.staminaRegenDelayTicks.get();
-        return true;
-    }
-
     /** 软消耗：能扣多少扣多少，返回实际扣除量。 */
     public double consumeUpTo(Player player, double amount) {
         if (!MoveConfig.INSTANCE.staminaEnabled.get()) return 0.0D;
@@ -125,7 +113,6 @@ public final class StaminaTracker {
     /**
      * 滑铲跳惩罚倍率 = 当前档位速度 / 一档速度。
      * 一档 = 1.0，二档 = level2Speed/startSpeed，三档 = level3Speed/startSpeed。
-     * 与旧版 combo 的 computeJumpMultiplier 语义一致。
      */
     public double jumpScaleFor(Player player) {
         if (!MoveConfig.INSTANCE.staminaEnabled.get()) return 1.0D;

@@ -5,12 +5,12 @@
 [![Java](https://img.shields.io/badge/Java-17-ED8B00.svg)](https://adoptium.net/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](#license)
 
-**Slide, crawl, and move like an FPS character — in Minecraft.**
+**Slide, crawl, peek, and move like an FPS character — in Minecraft.**
 
-**像 FPS 角色一样滑铲、趴下、战斗 —— 在 Minecraft 里。**
+**像 FPS 角色一样滑铲、趴下、探头 —— 在 Minecraft 里。**
 
-- Slide, crawl, three-tier stamina, inertia steering, slide-jump.
-- 滑铲、趴下、三档耐力、惯性转向、滑铲跳。
+- Slide, crawl, peek, three-tier stamina, inertia steering, slide-jump.
+- 滑铲、趴下、探头、三档耐力、惯性转向、滑铲跳。
 
 
 ---
@@ -55,9 +55,15 @@ Each slide costs stamina on start, drains while sliding, and regenerates after a
 
 ### 🧍 Crawl · 趴下
 
-Toggle with **`Z`**. Uses vanilla `Pose.SWIMMING` — hitbox and eye height handled by the game. Mutually exclusive with sliding.
+Toggle with **`Z`**. Uses vanilla `Pose.SWIMMING` — hitbox and eye height handled by the game. Mutually exclusive with sliding and peeking.
 
-按 **`Z`** 切换。使用原版 `Pose.SWIMMING`，碰撞箱与眼高交给游戏本体处理，与滑铲互斥。
+按 **`Z`** 切换。使用原版 `Pose.SWIMMING`，碰撞箱与眼高交给游戏本体处理，与滑铲、探头互斥。
+
+### 👀 Peek · 探头
+
+Hold **`Q`** / **`E`** to peek left / right. Your whole body leans out around a foot-anchored pivot — feet stay planted, head extends beyond cover. The peeked head is truly exposed to projectiles and explosions.
+
+按住 **`Q`** / **`E`** 向左 / 右探头。整个身体绕脚底向侧面探出，双脚原地不动，头部越过掩体。探出的头部会真实暴露在弹道与爆炸范围内。
 
 ### 🌐 Multiplayer Sync · 多人同步
 
@@ -73,6 +79,8 @@ Optimistic client prediction with server authority. Smooth input, anti-cheat int
 |:---:|:---|
 | `C` | Slide / 滑铲 |
 | `Z` | Crawl / 趴下 |
+| `Q` | Peek Left / 探头（左） |
+| `E` | Peek Right / 探头（右） |
 | `Space` | Slide-Jump (while sliding) / 滑铲跳（滑铲中） |
 
 All keys are rebindable in **Options → Controls**.
@@ -95,21 +103,29 @@ Tune it your way in `config/feimamovemod-common.toml`.
 
 在 `config/feimamovemod-common.toml` 中按你的手感调整。
 
-| Option | Default | Description |
-|:---|:---:|:---|
-| `slide.enabled` | `true` | 滑铲总开关 / Master switch |
-| `slide.requireSprint` | `false` | 必须疾跑才能滑铲 / Require sprinting |
-| `slide.allowWhenEmpty` | `true` | 零耐力也能滑铲（降为三档）/ Allow sliding at zero stamina |
-| `slide.startSpeed` | `0.6` | I 档初速度 / Tier-I initial speed |
-| `slide.decayDelay` | `3` | 开始衰减前的保持 tick / Ticks before decay |
-| `slide.friction` | `0.9` | 每 tick 衰减系数 / Per-tick decay factor |
-| `slide.endSpeed` | `0.2` | 低于此值结束滑铲 / End slide threshold |
-| `slide.slideTriggerCd` | `22` | 两次滑铲的最短间隔 / Cooldown |
-| `slide.requireSprint` | `false` | 需疾跑触发 / Require sprint |
-| `slide.hungerEnabled` | `false` | 消耗饱食度 / Hunger cost |
-| `crawl.enabled` | `true` | 趴下总开关 / Crawl master switch |
+**General · 通用** — Master switch, per-action toggles.
+总开关、各动作独立开关。
 
-Nested groups: `slide.steering` · `slide.jump` · `slide.stamina` · `slide.stamina.display` · `slide.hitbox`.
+**Slide · 滑铲** — Initial speed, decay delay, friction, end speed, trigger cooldown, hunger cost.
+初速度、衰减延迟、摩擦系数、末速度、触发冷却、饱食度消耗。
+
+**Slide — Steering · 转向** — Follow look, max turn offset, zeroing angle, turn speed.
+是否跟随视角、最大偏转角、归零角度、转向角速度。
+
+**Slide — Jump · 滑铲跳** — Forward speed, upward speed, follow look.
+水平速度、向上速度、是否跟随视角。
+
+**Slide — Stamina · 耐力** — Max, costs, regen rate & delay, tier thresholds, per-tier speeds.
+上限、启动与每 tick 消耗、恢复速率与延迟、档位阈值、各档速度。
+
+**Slide — Hitbox · 滑铲碰撞箱** — Width, height, eye height.
+宽度、高度、眼高。
+
+**Peek · 探头** — Camera offset, tilt angles, model offset, transition time.
+相机偏移量、倾斜角度、模型偏移、过渡时间。
+
+**Peek — Hitbox · 探头碰撞箱** — Width, standing / crouching height, alignment offset.
+宽度、站立 / 蹲下高度、对准偏移。
 
 ---
 

@@ -1,2 +1,11 @@
 com/feima/movemod/mixin/SlideTravelMixin xxa f_20900_
 com/feima/movemod/mixin/SlideTravelMixin zza f_20902_
+com/feima/movemod/mixin/PeekFullBodyMixin body f_102810_
+com/feima/movemod/mixin/PeekFullBodyMixin head f_102808_
+com/feima/movemod/mixin/PeekFullBodyMixin hat f_102809_
+com/feima/movemod/mixin/PeekFullBodyMixin rightArm f_102811_
+com/feima/movemod/mixin/PeekFullBodyMixin leftArm f_102812_
+com/feima/movemod/mixin/PeekFullBodyMixin rightLeg f_102813_
+com/feima/movemod/mixin/PeekFullBodyMixin leftLeg f_102814_
+com/feima/movemod/mixin/PeekCameraMixin getPosition ()Lnet/minecraft/world/phys/Vec3; m_90583_
+com/feima/movemod/mixin/PeekCameraMixin setPosition (Lnet/minecraft/world/phys/Vec3;)V m_90581_

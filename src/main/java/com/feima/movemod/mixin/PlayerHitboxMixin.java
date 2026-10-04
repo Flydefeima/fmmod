@@ -20,6 +20,7 @@ public abstract class PlayerHitboxMixin {
     ) {
         Player self = (Player) (Object) this;
         if (!MoveConfig.INSTANCE.enabled.get()) return;
+        if (!MoveConfig.INSTANCE.slideEnabled.get()) return;
         if (SlideAction.INSTANCE.isSliding(self)) {
             cir.setReturnValue(EntityDimensions.fixed(
                     MoveConfig.INSTANCE.hitboxWidth.get().floatValue(),
