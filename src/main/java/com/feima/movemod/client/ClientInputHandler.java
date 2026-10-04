@@ -17,9 +17,6 @@ public final class ClientInputHandler {
 
     private ClientInputHandler() {}
 
-    /** 跳跃键的边沿检测 */
-    private static boolean wasJumpDown = false;
-
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
@@ -28,6 +25,7 @@ public final class ClientInputHandler {
         LocalPlayer player = mc.player;
 
         // ---- 滑铲键（C）----
+        // 互斥由 SlideAction.canStart 内部保证：探头 / 趴下中会拒绝启动
         while (KeyBindings.SLIDE.consumeClick()) {
             if (player != null && SlideAction.INSTANCE.tryStartClient(player)) {
                 NetworkHandler.sendSlide();
@@ -35,6 +33,7 @@ public final class ClientInputHandler {
         }
 
         // ---- 趴下键（Z，切换式）----
+        // 互斥由 CrawlAction.canStart 内部保证
         while (KeyBindings.CRAWL.consumeClick()) {
             if (player == null) break;
 
@@ -47,6 +46,7 @@ public final class ClientInputHandler {
         }
 
         // ---- 探头（按住 Q / E，二者互斥）----
+        // 互斥由 PeekAction.canPeek 内部保证
         if (player != null) {
             boolean left  = KeyBindings.PEEK_LEFT.isDown();
             boolean right = KeyBindings.PEEK_RIGHT.isDown();
@@ -62,12 +62,12 @@ public final class ClientInputHandler {
         }
 
         // ---- 跳跃键（滑铲跳）----
-        boolean jumpDown = mc.options.keyJump.isDown();
-        if (jumpDown && !wasJumpDown && player != null
-                && SlideAction.INSTANCE.isSliding(player)) {
-            SlideAction.INSTANCE.trySlideJump(player);
-            NetworkHandler.sendSlideJump();
+        // 改用 consumeClick：keyJump 的 isDown() 采样会漏掉快速按下并抬起的边沿
+        while (mc.options.keyJump.consumeClick()) {
+            if (player != null && SlideAction.INSTANCE.isSliding(player)) {
+                SlideAction.INSTANCE.trySlideJump(player);
+                NetworkHandler.sendSlideJump();
+            }
         }
-        wasJumpDown = jumpDown;
     }
 }

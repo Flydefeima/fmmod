@@ -18,13 +18,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 /**
  * 爆炸遮挡采样：探头玩家使用「旋转后的斜长方体体积」采样，而不是原版 AABB。
  *
- * <p>原版 {@code Explosion.getSeenPercent} 在实体 AABB 上均匀采样点，从每个
- * 采样点向爆炸中心发射线，未命中的比例即为爆炸伤害的有效比例。对探头玩家
- * 来说，AABB 无法表达侧倾的体积——本 Mixin 在玩家未旋转局部系里采样，
- * 采样点旋转回世界坐标后再发射线。
- *
- * <p>效果：探出的头部若暴露在爆炸视线内，采样命中率上升（吃更多伤害）；
- * 身体另一侧缩回的部分若被方块挡住，采样命中率下降（少受伤）。
+ * <p>采样循环用整数索引，避免浮点累加在 1.0 边界处丢采样。
  */
 @Mixin(Explosion.class)
 public abstract class PeekExplosionMixin {
@@ -41,7 +35,6 @@ public abstract class PeekExplosionMixin {
         float bodyYaw = p.yBodyRot;
         double theta = PeekAction.INSTANCE.thetaImmediate(p);
 
-        // 玩家未旋转局部系里的基盒（平移到以 pivot 为原点）。
         AABB base = PeekAction.INSTANCE.baseBox(p);
         Vec3 pivot = PeekAction.INSTANCE.pivot(p);
         AABB localBox = base.move(-pivot.x, -pivot.y, -pivot.z);
@@ -50,12 +43,12 @@ public abstract class PeekExplosionMixin {
         double dy = localBox.maxY - localBox.minY;
         double dz = localBox.maxZ - localBox.minZ;
 
-        // 与原版一致：采样步长由盒子尺寸决定。
-        double stepX = 1.0D / (dx * 2.0D + 1.0D);
-        double stepY = 1.0D / (dy * 2.0D + 1.0D);
-        double stepZ = 1.0D / (dz * 2.0D + 1.0D);
+        // 整数循环：采样点数 = floor(尺寸 * 2) + 1，与原版采样密度一致。
+        int nx = (int) Math.floor(dx * 2.0D) + 1;
+        int ny = (int) Math.floor(dy * 2.0D) + 1;
+        int nz = (int) Math.floor(dz * 2.0D) + 1;
 
-        if (stepX < 0.0D || stepY < 0.0D || stepZ < 0.0D) {
+        if (nx <= 0 || ny <= 0 || nz <= 0) {
             cir.setReturnValue(0.0F);
             return;
         }
@@ -63,18 +56,21 @@ public abstract class PeekExplosionMixin {
         int seen = 0;
         int total = 0;
 
-        for (double fx = 0.0D; fx <= 1.0D; fx += stepX) {
-            for (double fy = 0.0D; fy <= 1.0D; fy += stepY) {
-                for (double fz = 0.0D; fz <= 1.0D; fz += stepZ) {
-                    double lx = Mth.lerp(fx, localBox.minX, localBox.maxX);
-                    double ly = Mth.lerp(fy, localBox.minY, localBox.maxY);
+        for (int ix = 0; ix <= nx; ix++) {
+            double fx = (double) ix / nx;
+            double lx = Mth.lerp(fx, localBox.minX, localBox.maxX);
+
+            for (int iy = 0; iy <= ny; iy++) {
+                double fy = (double) iy / ny;
+                double ly = Mth.lerp(fy, localBox.minY, localBox.maxY);
+
+                for (int iz = 0; iz <= nz; iz++) {
+                    double fz = (double) iz / nz;
                     double lz = Mth.lerp(fz, localBox.minZ, localBox.maxZ);
 
-                    // 局部采样点 → 世界坐标（旋转 + 平移）。
                     Vec3 sample = PeekAction.INSTANCE.localToWorld(
                             p, new Vec3(lx, ly, lz), bodyYaw, theta);
 
-                    // 与原版方向一致：从采样点射向爆炸中心。
                     ClipContext ctx = new ClipContext(
                             sample, explosionPos,
                             ClipContext.Block.COLLIDER,

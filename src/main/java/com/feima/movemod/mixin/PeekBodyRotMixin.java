@@ -24,8 +24,9 @@ public abstract class PeekBodyRotMixin {
         // 2. 只在探头（含收回过渡）时生效
         if (!PeekAction.INSTANCE.isPeekActive(player)) return;
 
-        // 3. 强制身体旋转跟随头部，消除横向移动的倾斜
-        player.yBodyRot = player.yHeadRot;
-        player.yBodyRotO = player.yHeadRot;
+        // 3. 强制身体旋转跟随头部，消除横向移动的倾斜。
+        //    注意 O 用上一 tick 的头旋转，否则渲染插值 lerp(partial, O, cur) 会失效。
+        player.yBodyRotO = player.yHeadRotO;
+        player.yBodyRot  = player.yHeadRot;
     }
 }

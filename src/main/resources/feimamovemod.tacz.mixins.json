@@ -1,0 +1,13 @@
+{
+  "required": false,
+  "minVersion": "0.8",
+  "package": "com.feima.movemod.mixin.compat",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "feimamovemod.refmap.json",
+  "mixins": [
+    "PeekTaczBulletMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

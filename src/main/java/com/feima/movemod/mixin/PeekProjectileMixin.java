@@ -18,16 +18,9 @@ import java.util.function.Predicate;
 
 /**
  * 弹射物命中：探头玩家使用「玩家未旋转局部系」的精确 clip，
- * 表达绕腰 pivot 侧倾 θ 后的斜长方体体积。
+ * 表达绕脚底 pivot 侧倾 θ 后的斜长方体体积。
  *
- * <p>不做外接 AABB 近似——那样会把头顶的角也填满，头部躲不开。
- * 精确做法见 {@link PeekAction#clipImmediate} / {@link PeekAction#containsImmediate}。
- *
- * <p>命中判定主要在服务端执行，那里没有渲染平滑数据，使用即时几何
- * （当前 {@code yBodyRot} + 目标偏移）。
- *
- * <p>原版行为细节保留：同载具实体走 {@code canRiderInteract()} 判定；
- * 6 参数 Entity 重载使用每个候选者自己的 {@code getPickRadius()}。
+ * <p>非探头实体完全走 1.20.1 原版的 AABB clip 路径，不引入载具特判。
  */
 @Mixin(ProjectileUtil.class)
 public abstract class PeekProjectileMixin {
@@ -46,7 +39,7 @@ public abstract class PeekProjectileMixin {
             CallbackInfoReturnable<EntityHitResult> cir
     ) {
         cir.setReturnValue(fmm$doHit(level, projectile, startVec, endVec,
-                boundingBox, filter, 0.3F));
+                boundingBox, filter, 0.3F, Double.MAX_VALUE));
     }
 
     @Inject(
@@ -60,7 +53,7 @@ public abstract class PeekProjectileMixin {
             CallbackInfoReturnable<EntityHitResult> cir
     ) {
         cir.setReturnValue(fmm$doHit(level, projectile, startVec, endVec,
-                boundingBox, filter, inflate));
+                boundingBox, filter, inflate, Double.MAX_VALUE));
     }
 
     @Inject(
@@ -75,14 +68,15 @@ public abstract class PeekProjectileMixin {
     ) {
         cir.setReturnValue(fmm$doHit(
                 projectile.level(), projectile, startVec, endVec,
-                boundingBox, filter, USE_PICK_RADIUS));
+                boundingBox, filter, USE_PICK_RADIUS, distance));
     }
 
     private static EntityHitResult fmm$doHit(
             Level level, Entity projectile, Vec3 startVec, Vec3 endVec,
-            AABB boundingBox, Predicate<Entity> filter, float inflate
+            AABB boundingBox, Predicate<Entity> filter, float inflate,
+            double initialClosest
     ) {
-        double closest = Double.MAX_VALUE;
+        double closest = initialClosest;
         Entity hitEntity = null;
         Vec3 hitVec = null;
 
@@ -91,55 +85,35 @@ public abstract class PeekProjectileMixin {
                     ? candidate.getPickRadius()
                     : inflate;
 
-            boolean startInside;
-            Vec3 hitPoint = null;
+            Vec3 hitPoint;
 
             if (candidate instanceof Player p && PeekAction.INSTANCE.isPeeking(p)) {
                 // 探头玩家：精确的旋转体积 clip。
-                startInside = PeekAction.INSTANCE.containsImmediate(p, startVec);
-                if (!startInside) {
+                if (PeekAction.INSTANCE.containsImmediate(p, startVec)) {
+                    hitPoint = startVec;
+                } else {
                     Optional<Vec3> h = PeekAction.INSTANCE.clipImmediate(
                             p, startVec, endVec, candidateInflate);
                     if (h.isEmpty()) continue;
                     hitPoint = h.get();
                 }
             } else {
-                // 普通实体：原版 AABB clip。
+                // 普通实体：与 1.20.1 原版一致。
                 AABB box = candidate.getBoundingBox().inflate(candidateInflate);
                 if (box.contains(startVec)) {
-                    startInside = true;
+                    hitPoint = startVec;
                 } else {
-                    startInside = false;
                     Optional<Vec3> h = box.clip(startVec, endVec);
                     if (h.isEmpty()) continue;
                     hitPoint = h.get();
                 }
             }
 
-            if (startInside) {
-                if (closest >= 0.0D) {
-                    hitEntity = candidate;
-                    hitVec = startVec;
-                    closest = 0.0D;
-                }
-                continue;
-            }
-
             double d = startVec.distanceToSqr(hitPoint);
-            if (d >= closest) continue;
-
-            // 与原版一致：同载具实体只有在 canRiderInteract()==false
-            // 时才走"特殊替换"分支；否则正常按距离竞争。
-            if (candidate.getRootVehicle() == projectile.getRootVehicle()
-                    && !candidate.canRiderInteract()) {
-                if (closest == 0.0D) {
-                    hitEntity = candidate;
-                    hitVec = hitPoint;
-                }
-            } else {
+            if (d < closest) {
+                closest = d;
                 hitEntity = candidate;
                 hitVec = hitPoint;
-                closest = d;
             }
         }
 

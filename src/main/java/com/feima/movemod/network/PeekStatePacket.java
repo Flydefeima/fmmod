@@ -1,6 +1,7 @@
 package com.feima.movemod.network;
 
 import com.feima.movemod.action.PeekAction;
+import com.feima.movemod.client.SlideClientHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Player;
@@ -51,6 +52,14 @@ public class PeekStatePacket {
         if (level == null) return;
         Player player = level.getPlayerByUUID(msg.playerId);
         if (player == null) return;
-        PeekAction.INSTANCE.trySet(player, msg.dir);
+
+        // 用权威路径，避免 trySet 里的 canPeek 因客户端预测滞后而误拒
+        PeekAction.INSTANCE.applyRemoteState(player, msg.dir);
+
+        // 本地玩家被拒 → 服务端已明确不接受当前请求。
+        // 目前没有本地缓冲，保留占位以便未来扩展。
+        if (msg.rejected && SlideClientHelper.isLocalPlayer(player)) {
+            // no-op
+        }
     }
 }

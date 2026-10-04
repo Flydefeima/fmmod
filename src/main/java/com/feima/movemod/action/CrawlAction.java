@@ -76,15 +76,6 @@ public final class CrawlAction {
     }
 
     // ---------------- 运行期 ----------------
-    /**
-     * 每 tick 由 {@code PlayerSlideMixin} 调用。
-     *
-     * <p>原版 {@code updatePlayerPose} 被 cancel 期间，入水 / 上船 / 鞘翅等
-     * 条件变化时不会自动解除趴下姿态。这里补上运行期检测：
-     * 一旦不再允许趴下，就主动 stop 并同步。
-     *
-     * <p>客户端只对本地玩家预测退出（远端玩家以服务端广播为准）。
-     */
     public void tick(Player player) {
         if (!isCrawling(player)) return;
         if (passiveAllowed(player)) return;
@@ -107,6 +98,12 @@ public final class CrawlAction {
                 ? data(player).add(player.getUUID())
                 : data(player).remove(player.getUUID());
         if (changed) player.refreshDimensions();
+
+        // 互斥：服务端权威决定进入趴下 → 清掉本地预测的滑铲 / 探头
+        if (crawling) {
+            SlideAction.INSTANCE.stop(player);
+            PeekAction.INSTANCE.stop(player);
+        }
     }
 
     public void forget(UUID id) {
@@ -119,6 +116,7 @@ public final class CrawlAction {
         if (!MoveConfig.INSTANCE.enabled.get()) return false;
         if (!MoveConfig.INSTANCE.crawlEnabled.get()) return false;
         if (SlideAction.INSTANCE.isSliding(player)) return false;
+        if (PeekAction.INSTANCE.isPeeking(player)) return false;
 
         if (player.getPose() != Pose.SWIMMING) {
             player.setPose(Pose.SWIMMING);

@@ -175,6 +175,10 @@ public final class SlideAction {
             }
 
             if (sliding) {
+                // 互斥：服务端权威决定进入滑铲 → 清掉本地预测的探头 / 趴下
+                PeekAction.INSTANCE.stop(player);
+                CrawlAction.INSTANCE.stop(player);
+
                 State state = clientStates.get(player.getUUID());
                 if (state == null) {
                     state = new State(player.getYRot(), speed);
@@ -196,6 +200,11 @@ public final class SlideAction {
 
         if (sliding) {
             if (clientStates.containsKey(player.getUUID())) return;
+
+            // 互斥：远端玩家同样以服务端为准，清掉同一玩家的竞争预测
+            PeekAction.INSTANCE.stop(player);
+            CrawlAction.INSTANCE.stop(player);
+
             State s = new State(player.getYRot(), 0.0D);
             clientStates.put(player.getUUID(), s);
             player.refreshDimensions();
@@ -220,7 +229,7 @@ public final class SlideAction {
 
         state.ticks++;
 
-        // 撞墙 = 主动结束（空中不会触发水平碰撞，所以不影响空中滑铲）
+        // 撞墙 = 主动结束
         if (player.horizontalCollision) {
             stop(player);
             return;
@@ -249,12 +258,12 @@ public final class SlideAction {
             float deltaYaw   = Mth.wrapDegrees(player.getYRot() - state.initialYaw);
             double maxOffset = MoveConfig.INSTANCE.maxTurnOffset.get();
             double zeroYaw   = MoveConfig.INSTANCE.turnOffsetZeroYaw.get();
+            double factor    = MoveConfig.INSTANCE.turnFactor.get();
 
-            // 视角偏移超过阈值 → 转向偏移归零（滑铲方向回到初始方向）。
-            // 否则按 maxTurnOffset 截断。
+            // 视角偏移超过阈值 → 归零；否则按 turnFactor 缩放后 clamp
             double targetOffset = (Math.abs(deltaYaw) > zeroYaw)
                     ? 0.0D
-                    : Mth.clamp(deltaYaw, -maxOffset, maxOffset);
+                    : Mth.clamp(deltaYaw * factor, -maxOffset, maxOffset);
 
             float targetYaw = Mth.wrapDegrees((float) (state.initialYaw + targetOffset));
 
@@ -290,9 +299,6 @@ public final class SlideAction {
 
         if (state.ticks >= decayDelay) state.speed *= friction;
 
-        // 注意：这里不再有 !player.onGround()。
-        // 空中滑铲保留状态，速度按 friction 自然衰减，
-        // 直到速度 ≤ endSpeed 或 < MIN_SPEED 才结束。
         if (state.speed <= endSpeed || state.speed < MIN_SPEED) {
             stop(player);
         }

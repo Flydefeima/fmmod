@@ -9,7 +9,7 @@ ext {
 }
 
 group            = 'com.feima.movemod'
-version          = '1.0.0-beta-5'
+version          = '1.0.0'
 
 base {
     archivesName = 'feimamovemod-forge-1.20.1'
@@ -47,6 +47,7 @@ minecraft {
 mixin {
     add sourceSets.main, 'feimamovemod.refmap.json'
     config 'feimamovemod.mixins.json'
+    config 'feimamovemod.tacz.mixins.json'
 }
 
 repositories {
@@ -60,7 +61,10 @@ repositories {
 
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+
+    implementation fg.deobf('tacz:tacz:1.1.8-hotfix')
     implementation fg.deobf("dev.kosmx.player-anim:player-animation-lib-forge:1.0.2-rc1+1.20")
+
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 }
 
@@ -78,7 +82,7 @@ jar {
                 "Implementation-Version"  : project.version,
                 "Implementation-Vendor"   : "Feima",
                 "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
-                "MixinConfigs"            : "feimamovemod.mixins.json",
+                "MixinConfigs"            : "feimamovemod.mixins.json,feimamovemod.tacz.mixins.json",
                 "License"                 : "MIT"
         ])
     }

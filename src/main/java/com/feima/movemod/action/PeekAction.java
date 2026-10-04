@@ -1,6 +1,8 @@
 package com.feima.movemod.action;
 
+import com.feima.movemod.client.SlideClientHelper;
 import com.feima.movemod.config.MoveConfig;
+import com.feima.movemod.network.NetworkHandler;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
@@ -327,7 +329,6 @@ public final class PeekAction {
 
         double halfW = (base.maxX - base.minX) * 0.5;
         double h     = base.maxY - base.minY;
-        double halfH = h * 0.5;
 
         // pivot 在脚底：局部 y 从 0 到 h，绕 0 旋转。
         double pvX = (base.minX + base.maxX) * 0.5;
@@ -390,8 +391,27 @@ public final class PeekAction {
     // tick
     // ============================================================
     public void tick(Player player) {
-        if (!player.level().isClientSide) return;
+        // 1) 客户端动画推进
+        if (player.level().isClientSide) {
+            tickClientAnim(player);
+        }
 
+        // 2) 运行期合法性复查（与 CrawlAction.tick 对称）
+        if (!isPeeking(player)) return;
+        if (passiveAllowed(player)) return;
+
+        if (player.level().isClientSide) {
+            if (SlideClientHelper.isLocalPlayer(player)) {
+                stop(player);
+                NetworkHandler.sendPeekSet(Dir.NONE);
+            }
+        } else {
+            stop(player);
+            NetworkHandler.broadcastPeekState(player, Dir.NONE);
+        }
+    }
+
+    private void tickClientAnim(Player player) {
         UUID id = player.getUUID();
         AnimState s = clientAnim.computeIfAbsent(id, k -> new AnimState());
 
@@ -416,6 +436,8 @@ public final class PeekAction {
 
         if (durationTicks <= 0f) {
             s.cur = target;
+            s.time = 0f;
+            s.target = target;
             return;
         }
 
@@ -434,13 +456,19 @@ public final class PeekAction {
     // 状态切换
     // ============================================================
     public boolean canPeek(Player p) {
+        if (!passiveAllowed(p)) return false;
+        if (SlideAction.INSTANCE.isSliding(p)) return false;
+        if (CrawlAction.INSTANCE.isCrawling(p)) return false;
+        return true;
+    }
+
+    /** 与启动条件共享的被动合法性检查：开关、状态、环境。 */
+    private boolean passiveAllowed(Player p) {
         if (!MoveConfig.INSTANCE.enabled.get()) return false;
         if (!MoveConfig.INSTANCE.peekEnabled.get()) return false;
         if (p.isSpectator() || p.isDeadOrDying()) return false;
         if (p.isPassenger() || p.isSleeping() || p.isFallFlying()) return false;
         if (p.isInWater() || p.isInLava()) return false;
-        if (SlideAction.INSTANCE.isSliding(p)) return false;
-        if (CrawlAction.INSTANCE.isCrawling(p)) return false;
         return true;
     }
 
@@ -453,6 +481,30 @@ public final class PeekAction {
 
         dirs(p).put(id, d);
         return true;
+    }
+
+    /**
+     * S2C 权威同步：直接写入状态，不走 {@link #canPeek}。
+     *
+     * <p>为什么不能用 {@link #trySet}：{@code trySet} 会做互斥检查
+     * （滑铲/趴下），而客户端的滑铲/趴下预测状态常比服务端滞后几 tick，
+     * 会导致合法的服务端探头广播被本地误拒。这里以服务端为权威，
+     * 收到广播后立即写入，并清理本地对同一玩家的竞争预测状态。
+     */
+    public void applyRemoteState(Player player, Dir dir) {
+        if (!player.level().isClientSide) return;
+
+        UUID id = player.getUUID();
+        Dir old = dirs(player).getOrDefault(id, Dir.NONE);
+        if (old == dir) return;
+
+        dirs(player).put(id, dir);
+
+        // 互斥：服务端权威决定进入探头 → 清掉本地预测的滑铲 / 趴下
+        if (dir != Dir.NONE) {
+            SlideAction.INSTANCE.stop(player);
+            CrawlAction.INSTANCE.stop(player);
+        }
     }
 
     public void stop(Player p) {
