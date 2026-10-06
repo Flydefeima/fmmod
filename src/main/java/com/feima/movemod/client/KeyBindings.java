@@ -18,9 +18,9 @@ public final class KeyBindings {
             CATEGORY
     );
 
-    /** 趴下，默认 Z 键 */
-    public static final KeyMapping CRAWL = new KeyMapping(
-            "key.feimamovemod.crawl",
+    /** 趴下 / 飞扑，默认 Z 键（上下文切换） */
+    public static final KeyMapping PRONE = new KeyMapping(
+            "key.feimamovemod.prone",
             InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_Z,
             CATEGORY

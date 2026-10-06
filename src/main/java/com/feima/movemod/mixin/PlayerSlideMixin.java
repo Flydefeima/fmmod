@@ -1,7 +1,8 @@
 package com.feima.movemod.mixin;
 
-import com.feima.movemod.action.CrawlAction;
+import com.feima.movemod.action.DiveAction;
 import com.feima.movemod.action.PeekAction;
+import com.feima.movemod.action.ProneAction;
 import com.feima.movemod.action.SlideAction;
 import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
@@ -17,6 +18,9 @@ public abstract class PlayerSlideMixin {
         Player self = (Player) (Object) this;
         SlideAction.INSTANCE.tick(self);
         PeekAction.INSTANCE.tick(self);
-        CrawlAction.INSTANCE.tick(self);
+        // Dive 在 Prone 之前：Dive 的 finishDive 会直接调用 ProneAction.tryStart，
+        // 紧随其后的 Prone tick 立即处理新激活的趴下状态。
+        DiveAction.INSTANCE.tick(self);
+        ProneAction.INSTANCE.tick(self);
     }
 }

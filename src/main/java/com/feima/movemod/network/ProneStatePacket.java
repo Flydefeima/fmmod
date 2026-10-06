@@ -1,6 +1,6 @@
 package com.feima.movemod.network;
 
-import com.feima.movemod.action.CrawlAction;
+import com.feima.movemod.action.ProneAction;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Player;
@@ -12,26 +12,26 @@ import java.util.UUID;
 import java.util.function.Supplier;
 
 /** 服务端 → 客户端：同步某个玩家的趴下状态。 */
-public class CrawlStatePacket {
+public class ProneStatePacket {
 
     private final UUID playerId;
-    private final boolean crawling;
+    private final boolean prone;
 
-    public CrawlStatePacket(UUID playerId, boolean crawling) {
+    public ProneStatePacket(UUID playerId, boolean prone) {
         this.playerId = playerId;
-        this.crawling = crawling;
+        this.prone = prone;
     }
 
-    public static void encode(CrawlStatePacket msg, FriendlyByteBuf buf) {
+    public static void encode(ProneStatePacket msg, FriendlyByteBuf buf) {
         buf.writeUUID(msg.playerId);
-        buf.writeBoolean(msg.crawling);
+        buf.writeBoolean(msg.prone);
     }
 
-    public static CrawlStatePacket decode(FriendlyByteBuf buf) {
-        return new CrawlStatePacket(buf.readUUID(), buf.readBoolean());
+    public static ProneStatePacket decode(FriendlyByteBuf buf) {
+        return new ProneStatePacket(buf.readUUID(), buf.readBoolean());
     }
 
-    public static void handle(CrawlStatePacket msg, Supplier<NetworkEvent.Context> ctx) {
+    public static void handle(ProneStatePacket msg, Supplier<NetworkEvent.Context> ctx) {
         NetworkEvent.Context context = ctx.get();
         context.enqueueWork(() ->
                 DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> handleClient(msg))
@@ -39,11 +39,11 @@ public class CrawlStatePacket {
         context.setPacketHandled(true);
     }
 
-    private static void handleClient(CrawlStatePacket msg) {
+    private static void handleClient(ProneStatePacket msg) {
         var level = Minecraft.getInstance().level;
         if (level == null) return;
         Player player = level.getPlayerByUUID(msg.playerId);
         if (player == null) return;
-        CrawlAction.INSTANCE.applyRemoteState(player, msg.crawling);
+        ProneAction.INSTANCE.applyRemoteState(player, msg.prone);
     }
 }

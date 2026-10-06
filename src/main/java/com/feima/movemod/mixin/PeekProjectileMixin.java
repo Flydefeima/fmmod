@@ -21,6 +21,23 @@ import java.util.function.Predicate;
  * 表达绕脚底 pivot 侧倾 θ 后的斜长方体体积。
  *
  * <p>非探头实体完全走 1.20.1 原版的 AABB clip 路径，不引入载具特判。
+ *
+ * <p><b>兼容性告知</b>：本 Mixin 用 {@code @At("HEAD") + @Inject(cancellable)}
+ * 完全接管了 {@code ProjectileUtil.getEntityHitResult} 的三个重载。
+ * 这意味着任何其它模组往这三个方法内部注入的代码（无论 HEAD 之后、
+ * RETURN 之前，还是其它注入点）都<b>不会被执行</b>——因为原方法体
+ * 根本没机会运行。
+ *
+ * <p>如果将来要共存于「需要修改原版弹道命中」的模组（弹道追踪、
+ * 命中特效、反作弊），需要改为下面的方案之一：
+ * <ul>
+ *   <li>把三个注入点的 {@code at} 改为 {@code RETURN} + {@code @ModifyVariable}
+ *       或 {@code @Inject(cancellable=true)}，只在原版算完后替换返回的
+ *       {@code EntityHitResult}；</li>
+ *   <li>或者仅在 {@code candidate instanceof Player && isPeeking} 时启用
+ *       本类的自定义 clip，其余候选者改调
+ *       {@code candidate.getBoundingBox().clip(...)}。</li>
+ * </ul>
  */
 @Mixin(ProjectileUtil.class)
 public abstract class PeekProjectileMixin {

@@ -13,13 +13,22 @@ import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.simple.SimpleChannel;
 
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 
 public final class NetworkHandler {
 
     private NetworkHandler() {}
 
-    /** 协议版本：新增 Peek 包，从 2 升到 3。 */
-    private static final String PROTOCOL = "3";
+    /**
+     * 协议版本：
+     *   - 5 → 6：DiveStatePacket 增加 fromAir 字段
+     *   - 6 → 7：SlideStatePacket 增加 seq 字段
+     *   - 7 → 8：移除空中飞扑，DiveStatePacket 删除 fromAir 字段
+     *   - 8 → 9：DiveStatePacket / PeekStatePacket 增加 stamina 字段
+     */
+    private static final String PROTOCOL = "9";
+
+    private static final AtomicLong SLIDE_BROADCAST_SEQ = new AtomicLong();
 
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(FeimaMoveMod.MODID, "main"),
@@ -36,14 +45,18 @@ public final class NetworkHandler {
                 SlideStatePacket::encode, SlideStatePacket::decode, SlideStatePacket::handle);
         CHANNEL.registerMessage(id++, SlideJumpPacket.class,
                 SlideJumpPacket::encode, SlideJumpPacket::decode, SlideJumpPacket::handle);
-        CHANNEL.registerMessage(id++, CrawlSetPacket.class,
-                CrawlSetPacket::encode, CrawlSetPacket::decode, CrawlSetPacket::handle);
-        CHANNEL.registerMessage(id++, CrawlStatePacket.class,
-                CrawlStatePacket::encode, CrawlStatePacket::decode, CrawlStatePacket::handle);
+        CHANNEL.registerMessage(id++, ProneSetPacket.class,
+                ProneSetPacket::encode, ProneSetPacket::decode, ProneSetPacket::handle);
+        CHANNEL.registerMessage(id++, ProneStatePacket.class,
+                ProneStatePacket::encode, ProneStatePacket::decode, ProneStatePacket::handle);
         CHANNEL.registerMessage(id++, PeekSetPacket.class,
                 PeekSetPacket::encode, PeekSetPacket::decode, PeekSetPacket::handle);
         CHANNEL.registerMessage(id++, PeekStatePacket.class,
                 PeekStatePacket::encode, PeekStatePacket::decode, PeekStatePacket::handle);
+        CHANNEL.registerMessage(id++, DivePacket.class,
+                DivePacket::encode, DivePacket::decode, DivePacket::handle);
+        CHANNEL.registerMessage(id++, DiveStatePacket.class,
+                DiveStatePacket::encode, DiveStatePacket::decode, DiveStatePacket::handle);
     }
 
     // ============================================================
@@ -57,12 +70,16 @@ public final class NetworkHandler {
         CHANNEL.sendToServer(new SlideJumpPacket());
     }
 
-    public static void sendCrawlSet(boolean crawling) {
-        CHANNEL.sendToServer(new CrawlSetPacket(crawling));
+    public static void sendProneSet(boolean prone) {
+        CHANNEL.sendToServer(new ProneSetPacket(prone));
     }
 
     public static void sendPeekSet(PeekAction.Dir dir) {
         CHANNEL.sendToServer(new PeekSetPacket(dir));
+    }
+
+    public static void sendDive() {
+        CHANNEL.sendToServer(new DivePacket());
     }
 
     // ============================================================
@@ -77,46 +94,72 @@ public final class NetworkHandler {
                 speed = SlideAction.INSTANCE.currentSpeed(p);
             }
         }
+        long seq = SLIDE_BROADCAST_SEQ.incrementAndGet();
         CHANNEL.send(
                 PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> entity),
-                new SlideStatePacket(entity.getUUID(), sliding, stamina, speed, false)
+                new SlideStatePacket(entity.getUUID(), sliding, stamina, speed, false, seq)
         );
     }
 
     public static void sendSlideReject(ServerPlayer player) {
         UUID id = player.getUUID();
         double stamina = StaminaTracker.INSTANCE.get(player);
+        long seq = SLIDE_BROADCAST_SEQ.incrementAndGet();
         CHANNEL.send(
                 PacketDistributor.PLAYER.with(() -> player),
-                new SlideStatePacket(id, false, stamina, 0.0D, true)
+                new SlideStatePacket(id, false, stamina, 0.0D, true, seq)
         );
     }
 
-    public static void broadcastCrawlState(Entity entity, boolean crawling) {
+    public static void broadcastProneState(Entity entity, boolean prone) {
         CHANNEL.send(
                 PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> entity),
-                new CrawlStatePacket(entity.getUUID(), crawling)
+                new ProneStatePacket(entity.getUUID(), prone)
         );
     }
 
-    public static void sendCrawlReject(ServerPlayer player) {
+    public static void sendProneReject(ServerPlayer player) {
         CHANNEL.send(
                 PacketDistributor.PLAYER.with(() -> player),
-                new CrawlStatePacket(player.getUUID(), false)
+                new ProneStatePacket(player.getUUID(), false)
         );
     }
 
     public static void broadcastPeekState(Entity entity, PeekAction.Dir dir) {
+        double stamina = 0.0D;
+        if (entity instanceof Player p) {
+            stamina = StaminaTracker.INSTANCE.get(p);
+        }
         CHANNEL.send(
                 PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> entity),
-                new PeekStatePacket(entity.getUUID(), dir, false)
+                new PeekStatePacket(entity.getUUID(), dir, false, stamina)
         );
     }
 
     public static void sendPeekReject(ServerPlayer player) {
+        double stamina = StaminaTracker.INSTANCE.get(player);
         CHANNEL.send(
                 PacketDistributor.PLAYER.with(() -> player),
-                new PeekStatePacket(player.getUUID(), PeekAction.Dir.NONE, true)
+                new PeekStatePacket(player.getUUID(), PeekAction.Dir.NONE, true, stamina)
+        );
+    }
+
+    public static void broadcastDiveState(Entity entity, boolean diving) {
+        double stamina = 0.0D;
+        if (entity instanceof Player p) {
+            stamina = StaminaTracker.INSTANCE.get(p);
+        }
+        CHANNEL.send(
+                PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> entity),
+                new DiveStatePacket(entity.getUUID(), diving, false, stamina)
+        );
+    }
+
+    public static void sendDiveReject(ServerPlayer player) {
+        double stamina = StaminaTracker.INSTANCE.get(player);
+        CHANNEL.send(
+                PacketDistributor.PLAYER.with(() -> player),
+                new DiveStatePacket(player.getUUID(), false, true, stamina)
         );
     }
 }

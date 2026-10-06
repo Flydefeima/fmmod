@@ -19,7 +19,6 @@ public abstract class PlayerHitboxMixin {
             CallbackInfoReturnable<EntityDimensions> cir
     ) {
         Player self = (Player) (Object) this;
-        if (!MoveConfig.INSTANCE.enabled.get()) return;
         if (!MoveConfig.INSTANCE.slideEnabled.get()) return;
         if (SlideAction.INSTANCE.isSliding(self)) {
             cir.setReturnValue(EntityDimensions.fixed(

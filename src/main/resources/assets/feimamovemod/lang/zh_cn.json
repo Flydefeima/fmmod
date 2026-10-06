@@ -1,17 +1,33 @@
 {
   "key.categories.feimamovemod": "Feima's Move Mod",
   "key.feimamovemod.slide": "滑铲",
-  "key.feimamovemod.crawl": "趴下",
+  "key.feimamovemod.prone": "趴下 / 飞扑",
   "key.feimamovemod.peek_left": "探头（左）",
   "key.feimamovemod.peek_right": "探头（右）",
 
-  "feimamovemod.configuration.general.enabled": "模组总开关",
-  "feimamovemod.configuration.general.slideEnabled": "启用滑铲",
-  "feimamovemod.configuration.general.crawlEnabled": "启用趴下",
-  "feimamovemod.configuration.general.peekEnabled": "启用探头",
+  "feimamovemod.configuration.slideEnabled": "启用滑铲",
+  "feimamovemod.configuration.proneEnabled": "启用趴下",
+  "feimamovemod.configuration.peekEnabled": "启用探头",
+
+  "feimamovemod.configuration.stamina.enabled": "启用耐力",
+  "feimamovemod.configuration.stamina.max": "耐力上限",
+  "feimamovemod.configuration.stamina.regenPerTick": "每 tick 恢复",
+  "feimamovemod.configuration.stamina.regenDelayTicks": "恢复延迟（tick）",
+
+  "feimamovemod.configuration.stamina.slide.allowWhenEmpty": "空耐力允许滑铲",
+  "feimamovemod.configuration.stamina.slide.costOnStart": "滑铲启动消耗",
+  "feimamovemod.configuration.stamina.slide.costPerTick": "滑铲每 tick 消耗",
+  "feimamovemod.configuration.stamina.slide.thresholds.level1": "滑铲一档阈值",
+  "feimamovemod.configuration.stamina.slide.thresholds.level2": "滑铲二档阈值",
+  "feimamovemod.configuration.stamina.slide.speeds.level2Speed": "滑铲二档速度",
+  "feimamovemod.configuration.stamina.slide.speeds.level3Speed": "滑铲三档速度",
+
+  "feimamovemod.configuration.stamina.dive.costOnStart": "飞扑启动消耗",
+  "feimamovemod.configuration.stamina.dive.costPerTick": "飞扑每 tick 消耗",
+
+  "feimamovemod.configuration.stamina.peek.costPerTick": "探头每 tick 消耗",
 
   "feimamovemod.configuration.slide.requireSprint": "需要疾跑",
-  "feimamovemod.configuration.slide.allowWhenEmpty": "空耐力允许滑铲",
   "feimamovemod.configuration.slide.slideParticle": "滑铲粒子",
   "feimamovemod.configuration.slide.startSpeed": "一档初速度",
   "feimamovemod.configuration.slide.decayDelay": "衰减延迟",
@@ -29,17 +45,6 @@
   "feimamovemod.configuration.slide.jump.slideJumpUp": "滑铲跳向上速度",
   "feimamovemod.configuration.slide.jump.slideJumpFollowLook": "滑铲跳跟随视角",
 
-  "feimamovemod.configuration.slide.stamina.enabled": "启用耐力",
-  "feimamovemod.configuration.slide.stamina.max": "耐力上限",
-  "feimamovemod.configuration.slide.stamina.costOnStart": "启动消耗",
-  "feimamovemod.configuration.slide.stamina.costPerTick": "每 tick 消耗",
-  "feimamovemod.configuration.slide.stamina.regenPerTick": "每 tick 恢复",
-  "feimamovemod.configuration.slide.stamina.regenDelayTicks": "恢复延迟",
-  "feimamovemod.configuration.slide.stamina.thresholds.level1": "一档阈值",
-  "feimamovemod.configuration.slide.stamina.thresholds.level2": "二档阈值",
-  "feimamovemod.configuration.slide.stamina.speeds.level2Speed": "二档速度",
-  "feimamovemod.configuration.slide.stamina.speeds.level3Speed": "三档速度",
-
   "feimamovemod.configuration.slide.hungerEnabled": "启用饥饿消耗",
   "feimamovemod.configuration.slide.hungerPerTick": "每 tick 疲劳度",
 
@@ -47,6 +52,15 @@
   "feimamovemod.configuration.slide.hitbox.hitboxHeight": "碰撞箱高度",
   "feimamovemod.configuration.slide.hitbox.eyeHeight": "眼睛高度",
 
+  "feimamovemod.configuration.prone.dive.enabled": "启用飞扑",
+  "feimamovemod.configuration.prone.dive.requireSprint": "触发需要疾跑",
+  "feimamovemod.configuration.prone.dive.horizontalSpeed": "水平初速度",
+  "feimamovemod.configuration.prone.dive.friction": "摩擦系数",
+  "feimamovemod.configuration.prone.dive.endSpeed": "末速度",
+  "feimamovemod.configuration.prone.dive.upBoost": "向上初速",
+  "feimamovemod.configuration.prone.dive.convertToProneOnLand": "地面结束时自动趴下",
+
+  "feimamovemod.configuration.peek.lastPressWins": "后按下的探头键生效",
   "feimamovemod.configuration.peek.distance": "探头横向偏移（相机）",
   "feimamovemod.configuration.peek.angleThirdPerson": "第三人称全身倾斜角度",
   "feimamovemod.configuration.peek.angleFirstPerson": "第一人称相机倾斜角度",

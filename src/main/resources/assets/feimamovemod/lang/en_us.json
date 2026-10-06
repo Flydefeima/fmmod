@@ -1,17 +1,33 @@
 {
   "key.categories.feimamovemod": "Feima's Move Mod",
   "key.feimamovemod.slide": "Slide",
-  "key.feimamovemod.crawl": "Crawl",
+  "key.feimamovemod.prone": "Prone / Dive",
   "key.feimamovemod.peek_left": "Peek Left",
   "key.feimamovemod.peek_right": "Peek Right",
 
-  "feimamovemod.configuration.general.enabled": "Enable Mod",
-  "feimamovemod.configuration.general.slideEnabled": "Enable Slide",
-  "feimamovemod.configuration.general.crawlEnabled": "Enable Crawl",
-  "feimamovemod.configuration.general.peekEnabled": "Enable Peek",
+  "feimamovemod.configuration.slideEnabled": "Enable Slide",
+  "feimamovemod.configuration.proneEnabled": "Enable Prone",
+  "feimamovemod.configuration.peekEnabled": "Enable Peek",
+
+  "feimamovemod.configuration.stamina.enabled": "Enable Stamina",
+  "feimamovemod.configuration.stamina.max": "Max Stamina",
+  "feimamovemod.configuration.stamina.regenPerTick": "Regen Per Tick",
+  "feimamovemod.configuration.stamina.regenDelayTicks": "Regen Delay (ticks)",
+
+  "feimamovemod.configuration.stamina.slide.allowWhenEmpty": "Allow Slide When Stamina Empty",
+  "feimamovemod.configuration.stamina.slide.costOnStart": "Slide Start Cost",
+  "feimamovemod.configuration.stamina.slide.costPerTick": "Slide Cost Per Tick",
+  "feimamovemod.configuration.stamina.slide.thresholds.level1": "Slide Tier 1 Threshold",
+  "feimamovemod.configuration.stamina.slide.thresholds.level2": "Slide Tier 2 Threshold",
+  "feimamovemod.configuration.stamina.slide.speeds.level2Speed": "Slide Tier 2 Speed",
+  "feimamovemod.configuration.stamina.slide.speeds.level3Speed": "Slide Tier 3 Speed",
+
+  "feimamovemod.configuration.stamina.dive.costOnStart": "Dive Start Cost",
+  "feimamovemod.configuration.stamina.dive.costPerTick": "Dive Cost Per Tick",
+
+  "feimamovemod.configuration.stamina.peek.costPerTick": "Peek Cost Per Tick",
 
   "feimamovemod.configuration.slide.requireSprint": "Require Sprint",
-  "feimamovemod.configuration.slide.allowWhenEmpty": "Allow When Stamina Empty",
   "feimamovemod.configuration.slide.slideParticle": "Slide Particles",
   "feimamovemod.configuration.slide.startSpeed": "Initial Speed (Tier 1)",
   "feimamovemod.configuration.slide.decayDelay": "Decay Delay",
@@ -29,17 +45,6 @@
   "feimamovemod.configuration.slide.jump.slideJumpUp": "Jump Upward Speed",
   "feimamovemod.configuration.slide.jump.slideJumpFollowLook": "Jump Follows Look",
 
-  "feimamovemod.configuration.slide.stamina.enabled": "Enable Stamina",
-  "feimamovemod.configuration.slide.stamina.max": "Max Stamina",
-  "feimamovemod.configuration.slide.stamina.costOnStart": "Start Cost",
-  "feimamovemod.configuration.slide.stamina.costPerTick": "Cost Per Tick",
-  "feimamovemod.configuration.slide.stamina.regenPerTick": "Regen Per Tick",
-  "feimamovemod.configuration.slide.stamina.regenDelayTicks": "Regen Delay",
-  "feimamovemod.configuration.slide.stamina.thresholds.level1": "Tier 1 Threshold",
-  "feimamovemod.configuration.slide.stamina.thresholds.level2": "Tier 2 Threshold",
-  "feimamovemod.configuration.slide.stamina.speeds.level2Speed": "Tier 2 Speed",
-  "feimamovemod.configuration.slide.stamina.speeds.level3Speed": "Tier 3 Speed",
-
   "feimamovemod.configuration.slide.hungerEnabled": "Enable Hunger Cost",
   "feimamovemod.configuration.slide.hungerPerTick": "Hunger Per Tick",
 
@@ -47,6 +52,15 @@
   "feimamovemod.configuration.slide.hitbox.hitboxHeight": "Hitbox Height",
   "feimamovemod.configuration.slide.hitbox.eyeHeight": "Eye Height",
 
+  "feimamovemod.configuration.prone.dive.enabled": "Enable Dive",
+  "feimamovemod.configuration.prone.dive.requireSprint": "Require Sprint",
+  "feimamovemod.configuration.prone.dive.horizontalSpeed": "Horizontal Speed",
+  "feimamovemod.configuration.prone.dive.friction": "Friction",
+  "feimamovemod.configuration.prone.dive.endSpeed": "End Speed",
+  "feimamovemod.configuration.prone.dive.upBoost": "Upward Boost",
+  "feimamovemod.configuration.prone.dive.convertToProneOnLand": "Convert to Prone on Ground",
+
+  "feimamovemod.configuration.peek.lastPressWins": "Last-Pressed Peek Key Wins",
   "feimamovemod.configuration.peek.distance": "Peek Lateral Offset",
   "feimamovemod.configuration.peek.angleThirdPerson": "Third-Person Whole-Body Tilt Angle",
   "feimamovemod.configuration.peek.angleFirstPerson": "First-Person Camera Roll Angle",

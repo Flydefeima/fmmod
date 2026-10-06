@@ -1,5 +1,6 @@
 package com.feima.movemod.mixin;
 
+import com.feima.movemod.action.DiveAction;
 import com.feima.movemod.action.SlideAction;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -10,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
 /**
- * 滑铲期间屏蔽 WASD 对移动的影响。
+ * 滑铲 / 飞扑期间屏蔽 WASD 对移动的影响。
  *
  * 关键点：
  *   LivingEntity.aiStep() 在调用 travel() 之前已经读了 xxa/zza：
@@ -31,7 +32,10 @@ public abstract class SlideTravelMixin {
     )
     private Vec3 fmm$blockInputDuringSlide(Vec3 travelVector) {
         if (!((Object) this instanceof Player player)) return travelVector;
-        if (!SlideAction.INSTANCE.isSliding(player)) return travelVector;
+
+        boolean blocked = SlideAction.INSTANCE.isSliding(player)
+                || DiveAction.INSTANCE.isDiving(player);
+        if (!blocked) return travelVector;
 
         // 顺手把字段也清零，防止后续 tick 残留
         this.xxa = 0.0F;

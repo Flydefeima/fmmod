@@ -8,14 +8,25 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 耐力条：双端各自维护一份，服务端权威。
+ * 耐力系统：双端各自维护一份，服务端权威。
  *
- * 耐力 → 档位的映射：
+ * <p>三种动作消耗耐力（趴下不消耗）：
+ * <ul>
+ *   <li><b>滑铲</b>：启动时一次性消耗 {@code stamina.slide.costOnStart}，
+ *       期间每 tick 消耗 {@code stamina.slide.costPerTick}；</li>
+ *   <li><b>飞扑</b>：启动时一次性消耗 {@code stamina.dive.costOnStart}，
+ *       期间每 tick 消耗 {@code stamina.dive.costPerTick}；
+ *       启动时若耐力不足则直接拒绝；</li>
+ *   <li><b>探头</b>：持续消耗 {@code stamina.peek.costPerTick}，
+ *       耗尽自动退出。</li>
+ * </ul>
+ *
+ * <p>滑铲的耐力 → 档位映射：
  *   比例 ≥ level1Threshold  → level 0（一档，motion.startSpeed）
  *   比例 ≥ level2Threshold  → level 1（二档，level2Speed）
  *   否则                    → level 2（三档，level3Speed）
  *
- * 同步模型：
+ * <p>同步模型：
  *   1. 客户端预测启动滑铲时本地 consume 一次，用本地耐力决定档位
  *   2. 服务端接受时也 consume 一次，并把权威耐力 + 实际使用的初速广播
  *   3. 客户端收到包后无条件覆盖本地耐力和（滑铲早期的）初速
@@ -54,7 +65,25 @@ public final class StaminaTracker {
         e.value = Math.max(0.0D, Math.min(getMax(), value));
     }
 
-    /** 软消耗：能扣多少扣多少，返回实际扣除量。 */
+    /**
+     * 通用检查：玩家当前耐力是否 ≥ {@code amount}。
+     *
+     * <p>耐力系统关闭、{@code amount ≤ 0} 时永远返回 true。
+     * 用于动作启动前的门槛检查——例如飞扑启动前检查是否有
+     * {@code stamina.dive.costOnStart} 的耐力。
+     */
+    public boolean hasEnough(Player player, double amount) {
+        if (!MoveConfig.INSTANCE.staminaEnabled.get()) return true;
+        if (amount <= 0.0D) return true;
+        return get(player) >= amount;
+    }
+
+    /**
+     * 软消耗：能扣多少扣多少，返回实际扣除量。
+     *
+     * <p>消耗后重置回充延迟计时器。用于「持续消耗」和
+     * 「启动一次性消耗」两种场景，不区分是否够扣。
+     */
     public double consumeUpTo(Player player, double amount) {
         if (!MoveConfig.INSTANCE.staminaEnabled.get()) return 0.0D;
         if (amount <= 0.0D) return 0.0D;
@@ -82,10 +111,9 @@ public final class StaminaTracker {
         }
     }
 
-    /**
-     * 当前耐力档位：0 = 一档（最快），1 = 二档，2 = 三档（最慢）。
-     * 耐力系统关闭时永远返回一档。
-     */
+    // ============================================================
+    // 滑铲专属：档位与速度
+    // ============================================================
     public int levelOf(Player player) {
         if (!MoveConfig.INSTANCE.staminaEnabled.get()) return LEVEL_1;
 
@@ -93,8 +121,8 @@ public final class StaminaTracker {
         if (max <= 0.0D) return LEVEL_1;
 
         double ratio = get(player) / max;
-        double l1 = MoveConfig.INSTANCE.staminaLevel1Threshold.get();
-        double l2 = MoveConfig.INSTANCE.staminaLevel2Threshold.get();
+        double l1 = MoveConfig.INSTANCE.staminaSlideLevel1Threshold.get();
+        double l2 = MoveConfig.INSTANCE.staminaSlideLevel2Threshold.get();
 
         if (ratio >= l1) return LEVEL_1;
         if (ratio >= l2) return LEVEL_2;
@@ -105,14 +133,13 @@ public final class StaminaTracker {
     public double speedFor(Player player) {
         return switch (levelOf(player)) {
             case LEVEL_1 -> MoveConfig.INSTANCE.startSpeed.get();
-            case LEVEL_2 -> MoveConfig.INSTANCE.staminaLevel2Speed.get();
-            default      -> MoveConfig.INSTANCE.staminaLevel3Speed.get();
+            case LEVEL_2 -> MoveConfig.INSTANCE.staminaSlideLevel2Speed.get();
+            default      -> MoveConfig.INSTANCE.staminaSlideLevel3Speed.get();
         };
     }
 
     /**
      * 滑铲跳惩罚倍率 = 当前档位速度 / 一档速度。
-     * 一档 = 1.0，二档 = level2Speed/startSpeed，三档 = level3Speed/startSpeed。
      */
     public double jumpScaleFor(Player player) {
         if (!MoveConfig.INSTANCE.staminaEnabled.get()) return 1.0D;
@@ -123,10 +150,10 @@ public final class StaminaTracker {
         return speedFor(player) / base;
     }
 
-    /** 是否够耐力启动滑铲（≥ costOnStart）。 */
+    /** 滑铲专用：当前耐力是否足够启动一次滑铲。 */
     public boolean canStart(Player player) {
         if (!MoveConfig.INSTANCE.staminaEnabled.get()) return true;
-        return get(player) >= MoveConfig.INSTANCE.staminaCostOnStart.get();
+        return get(player) >= MoveConfig.INSTANCE.staminaSlideCostOnStart.get();
     }
 
     public void forget(UUID id) {

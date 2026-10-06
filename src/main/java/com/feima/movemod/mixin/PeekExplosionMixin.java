@@ -18,7 +18,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 /**
  * 爆炸遮挡采样：探头玩家使用「旋转后的斜长方体体积」采样，而不是原版 AABB。
  *
- * <p>采样循环用整数索引，避免浮点累加在 1.0 边界处丢采样。
+ * <p>采样循环复刻原版 {@code Explosion.getSeenPercent} 的浮点步长
+ * （{@code 1 / (size * 2 + 1)} 逐轴累加），保证非整数尺寸下采样点分布
+ * 与原版一致；仅把世界坐标采样点替换为局部坐标经 {@code localToWorld}
+ * 变换后的点，不改变几何判定标准。
  */
 @Mixin(Explosion.class)
 public abstract class PeekExplosionMixin {
@@ -43,12 +46,12 @@ public abstract class PeekExplosionMixin {
         double dy = localBox.maxY - localBox.minY;
         double dz = localBox.maxZ - localBox.minZ;
 
-        // 整数循环：采样点数 = floor(尺寸 * 2) + 1，与原版采样密度一致。
-        int nx = (int) Math.floor(dx * 2.0D) + 1;
-        int ny = (int) Math.floor(dy * 2.0D) + 1;
-        int nz = (int) Math.floor(dz * 2.0D) + 1;
+        // 与原版 Explosion.getSeenPercent 相同的采样步长。
+        double d0 = 1.0 / (dx * 2.0 + 1.0);
+        double d1 = 1.0 / (dy * 2.0 + 1.0);
+        double d2 = 1.0 / (dz * 2.0 + 1.0);
 
-        if (nx <= 0 || ny <= 0 || nz <= 0) {
+        if (d0 < 0.0 || d1 < 0.0 || d2 < 0.0) {
             cir.setReturnValue(0.0F);
             return;
         }
@@ -56,16 +59,13 @@ public abstract class PeekExplosionMixin {
         int seen = 0;
         int total = 0;
 
-        for (int ix = 0; ix <= nx; ix++) {
-            double fx = (double) ix / nx;
+        for (double fx = 0.0; fx <= 1.0; fx += d0) {
             double lx = Mth.lerp(fx, localBox.minX, localBox.maxX);
 
-            for (int iy = 0; iy <= ny; iy++) {
-                double fy = (double) iy / ny;
+            for (double fy = 0.0; fy <= 1.0; fy += d1) {
                 double ly = Mth.lerp(fy, localBox.minY, localBox.maxY);
 
-                for (int iz = 0; iz <= nz; iz++) {
-                    double fz = (double) iz / nz;
+                for (double fz = 0.0; fz <= 1.0; fz += d2) {
                     double lz = Mth.lerp(fz, localBox.minZ, localBox.maxZ);
 
                     Vec3 sample = PeekAction.INSTANCE.localToWorld(

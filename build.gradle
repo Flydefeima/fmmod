@@ -1,6 +1,6 @@
 plugins {
-    id 'net.minecraftforge.gradle' version '6.+'
-    id 'org.spongepowered.mixin' version '0.7.+'
+    id 'net.minecraftforge.gradle' version '6.0.+'
+    id 'org.spongepowered.mixin' version '0.7.38'
 }
 
 ext {
@@ -9,7 +9,7 @@ ext {
 }
 
 group            = 'com.feima.movemod'
-version          = '1.0.0'
+version          = '1.0.1'
 
 base {
     archivesName = 'feimamovemod-forge-1.20.1'
@@ -23,19 +23,19 @@ minecraft {
     runs {
         client {
             workingDirectory project.file('run')
-            property 'forge.logging.mojang_level', 'debug'
+            property 'forge.logging.mojang_level', 'info'
             property 'mixin.env.remapRefMap', 'true'
             property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
             mods { feimamovemod { source sourceSets.main } }
         }
         server {
             workingDirectory project.file('run/server')
-            property 'forge.logging.mojang_level', 'debug'
+            property 'forge.logging.mojang_level', 'info'
             mods { feimamovemod { source sourceSets.main } }
         }
         data {
             workingDirectory project.file('run')
-            property 'forge.logging.mojang_level', 'debug'
+            property 'forge.logging.mojang_level', 'info'
             args '--mod', 'feimamovemod', '--all',
                  '--output', file('src/generated/resources/'),
                  '--existing', file('src/main/resources/')
@@ -52,18 +52,15 @@ mixin {
 
 repositories {
     mavenCentral()
-    maven { url = uri('libs') }
-    maven {
-        name = "KosmX's maven"
-        url = 'https://maven.kosmx.dev/'
-    }
+    // 用 rootProject.file 锚定路径，避免从其它工作目录调用时解析错。
+    maven { url = rootProject.file('libs').toURI() }
 }
 
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 
-    implementation fg.deobf('tacz:tacz:1.1.8-hotfix')
-    implementation fg.deobf("dev.kosmx.player-anim:player-animation-lib-forge:1.0.2-rc1+1.20")
+    compileOnly fg.deobf('tacz:tacz:1.1.8-hotfix')
+    runtimeOnly fg.deobf('tacz:tacz:1.1.8-hotfix')
 
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 }
@@ -82,7 +79,6 @@ jar {
                 "Implementation-Version"  : project.version,
                 "Implementation-Vendor"   : "Feima",
                 "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
-                "MixinConfigs"            : "feimamovemod.mixins.json,feimamovemod.tacz.mixins.json",
                 "License"                 : "MIT"
         ])
     }

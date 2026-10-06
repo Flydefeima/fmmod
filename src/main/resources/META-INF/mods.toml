@@ -8,20 +8,13 @@ version="${file.jarVersion}"
 displayName="Feima's Move Mod"
 authors="Feima"
 description='''
-滑铲、趴下、探头等战术机动动作。
+A tactical Minecraft movement mod.
 '''
 
 [[dependencies.feimamovemod]]
 modId="forge"
 mandatory=true
 versionRange="[47,)"
-ordering="NONE"
-side="BOTH"
-
-[[dependencies.feimamovemod]]
-modId="playeranimator"
-mandatory=true
-versionRange="[1.0.0,)"
 ordering="NONE"
 side="BOTH"
 

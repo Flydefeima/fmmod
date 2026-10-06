@@ -16,40 +16,17 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * 探头：整个玩家体积绕<b>脚底</b>竖直轴侧倾 θ。
  *
- * <p><b>为什么 pivot 在脚而不是腰</b>：绕腰旋转时只有上半身明显侧倾，
- * 腿几乎不动，看起来像"上半身扭了一下"。绕脚底旋转时整个模型作为
- * 刚体倾斜，脚钉在原地、头向侧方远离，视觉上就是"整个人向侧面探出"。
- * 第三人称模型（{@code PeekFullBodyMixin}）用的是同一个脚底 pivot，
- * 所以模型的倾斜形状与碰撞箱的倾斜形状能精确对齐。
+ * <p><b>耐力</b>：探头期间每 tick 消耗
+ * {@code stamina.peek.costPerTick}，耗尽时自动退出。
+ * 消耗只由服务端和本地客户端执行——远端玩家的耐力消耗在服务端，
+ * 客户端侧不重复扣减。
  *
- * <p><b>体积怎么表达</b>：玩家实际占据的空间是一个绕脚底 pivot
- * 侧倾 θ 的斜长方体。AABB 本身无法旋转，但我们可以在
- * <b>玩家未旋转的局部参照系</b>里做命中检测：
- * <ol>
- *   <li>把世界坐标点平移回 pivot（脚底中心）原点，再绕玩家 forward 轴
- *       反旋转 -θ（即应用 R(+θ)）；</li>
- *   <li>在这个局部参照系里，玩家体积 = 未旋转的 baseBox；</li>
- *   <li>用局部 AABB 做 clip，得到命中点；</li>
- *   <li>把命中点正旋转回世界坐标（应用 R(-θ)）。</li>
- * </ol>
- *
- * <p>{@link #worldToLocal} 与 {@link #localToWorld} 是严格互逆的。
- *
- * <p><b>动画模型</b>：
+ * <p>详细说明见项目文档。这里只列出关键不变量：
  * <ul>
- *   <li>目标变化时，锁定 {@code start = cur} 并重置时间轴</li>
- *   <li>时间轴线性推进 {@code t = time / duration}</li>
- *   <li>缓动 {@code eased = 1 - (1-t)^3}（easeOutCubic）</li>
- *   <li>输出 {@code cur = start + (target - start) * eased}</li>
- *   <li>渲染时 {@code Mth.lerp(partial, prev, cur)} 在 tick 间插值</li>
+ *   <li>{@link #worldToLocal} 与 {@link #localToWorld} 严格互逆</li>
+ *   <li>旋转 pivot = 基盒底边中心（脚底）</li>
+ *   <li>动画只走客户端；命中判定使用 {@link #thetaImmediate}（即时几何）</li>
  * </ul>
- *
- * <p><b>横向偏移</b>：碰撞箱 / 命中判定的总横向偏移 =
- * {@code peek.hitbox.offset}（对准微调）+ {@code peek.modelOffset}（跟随模型）。
- * 前者是固定校准量，后者与第三人称模型的横向偏移一致。
- *
- * <p><b>动画只走客户端</b>：服务端没有 prev / cur 数据，
- * {@link #thetaImmediate} 仍是即时几何，命中判定使用它。
  */
 public final class PeekAction {
 
@@ -97,10 +74,6 @@ public final class PeekAction {
 
     /**
      * 是否处于「探头活跃」状态：方向非 NONE，或客户端显示值尚未归零。
-     *
-     * <p><b>视觉 mixin 必须用这个，而不是 {@link #isPeeking}</b>。
-     * 收回时 {@code dir} 立即变 NONE，但动画要经过 transitionTicks
-     * 才归零。
      */
     public boolean isPeekActive(Player p) {
         if (isPeeking(p)) return true;
@@ -132,16 +105,6 @@ public final class PeekAction {
     // ============================================================
     // 基盒
     // ============================================================
-    /**
-     * 用<b>显式 signedOffset</b>（正=右，负=左，0=居中）构造基盒。
-     *
-     * <p>玩家基盒（未旋转）：水平居中于玩家（再沿探头方向横向平移
-     * {@code signedOffset}），底边贴合玩家碰撞盒底部，高度由
-     * {@code peek.hitbox.height}（站立）或 {@code peek.hitbox.crouchHeight}
-     * （蹲下）决定，宽度由 {@code peek.hitbox.width} 决定。
-     *
-     * <p>旋转 pivot = 基盒<b>底边中心</b>（脚底），见 {@link #pivotOf}。
-     */
     public AABB baseBoxAt(Player p, double signedOffset) {
         AABB bb = p.getBoundingBox();
         double width  = MoveConfig.INSTANCE.peekHitboxWidth.get();
@@ -170,11 +133,6 @@ public final class PeekAction {
         );
     }
 
-    /**
-     * 即时基盒：横向偏移 = {@code peek.hitbox.offset}（对准）
-     * + {@code peek.modelOffset}（跟随模型），方向由 {@code dir} 决定。
-     * 命中判定用。
-     */
     public AABB baseBox(Player p) {
         double cfg = MoveConfig.INSTANCE.peekHitboxOffset.get()
                    + MoveConfig.INSTANCE.peekModelOffset.get();
@@ -185,10 +143,6 @@ public final class PeekAction {
         return baseBoxAt(p, signedOffset);
     }
 
-    /**
-     * 渲染用基盒：横向偏移随动画插值，量同样为
-     * {@code peekHitboxOffset + peekModelOffset}。
-     */
     public AABB baseBoxRender(Player p, float partial) {
         double max = MoveConfig.INSTANCE.peekDistance.get();
         double cfg = MoveConfig.INSTANCE.peekHitboxOffset.get()
@@ -198,12 +152,6 @@ public final class PeekAction {
         return baseBoxAt(p, ratio * cfg);
     }
 
-    /**
-     * 由基盒取旋转 pivot：<b>底边中心</b>（脚底）。
-     *
-     * <p>与 {@code PeekFullBodyMixin} 里模型的脚底 pivot 一致，
-     * 因此碰撞箱的倾斜形状与模型的倾斜形状精确匹配。
-     */
     public static Vec3 pivotOf(AABB base) {
         return new Vec3(
                 (base.minX + base.maxX) * 0.5,
@@ -212,12 +160,10 @@ public final class PeekAction {
         );
     }
 
-    /** 即时 pivot。命中判定用。 */
     public Vec3 pivot(Player p) {
         return pivotOf(baseBox(p));
     }
 
-    /** 渲染用 pivot。 */
     public Vec3 pivotRender(Player p, float partial) {
         return pivotOf(baseBoxRender(p, partial));
     }
@@ -225,7 +171,6 @@ public final class PeekAction {
     // ============================================================
     // 旋转角
     // ============================================================
-    /** 由 offset 换算旋转角（弧度）。 */
     public double thetaFor(Player p, double offset) {
         double max = MoveConfig.INSTANCE.peekDistance.get();
         if (max <= 0.0 || Math.abs(offset) < EPS) return 0.0;
@@ -233,20 +178,16 @@ public final class PeekAction {
         return Math.toRadians(ratio * MoveConfig.INSTANCE.peekAngleThirdPerson.get());
     }
 
-    /** 即时旋转角（弧度）。命中判定用。 */
     public double thetaImmediate(Player p) {
         return thetaFor(p, targetOffset(p));
     }
 
-    /** 渲染用旋转角（弧度）。 */
     public double thetaRender(Player p, float partial) {
         return thetaFor(p, smoothOffset(p, partial));
     }
 
     // ============================================================
     // 坐标变换：世界 ⇄ 玩家未旋转局部系
-    //
-    // pivot 在脚底：局部系的原点就是脚底中心。
     // ============================================================
     public Vec3 worldToLocal(Player p, Vec3 w, float bodyYaw, double theta) {
         Vec3 pv = pivot(p);
@@ -330,7 +271,6 @@ public final class PeekAction {
         double halfW = (base.maxX - base.minX) * 0.5;
         double h     = base.maxY - base.minY;
 
-        // pivot 在脚底：局部 y 从 0 到 h，绕 0 旋转。
         double pvX = (base.minX + base.maxX) * 0.5;
         double pvZ = (base.minZ + base.maxZ) * 0.5;
 
@@ -352,7 +292,7 @@ public final class PeekAction {
         for (int sx = -1; sx <= 1; sx += 2) {
             double xr = sx * halfW;
             for (int sy = 0; sy <= 1; sy++) {
-                double yu = sy * h;  // 0（脚底）或 h（头顶）
+                double yu = sy * h;
                 for (int sz = -1; sz <= 1; sz += 2) {
                     double zf = sz * halfW;
 
@@ -380,7 +320,6 @@ public final class PeekAction {
         return boxAt(p, bodyYaw(p, partial), smoothOffset(p, partial));
     }
 
-    /** 渲染帧插值：{@code lerp(partial, prev, cur)}。 */
     public double smoothOffset(Player p, float partial) {
         AnimState s = clientAnim.get(p.getUUID());
         if (s == null) return 0.0;
@@ -391,20 +330,39 @@ public final class PeekAction {
     // tick
     // ============================================================
     public void tick(Player player) {
-        // 1) 客户端动画推进
         if (player.level().isClientSide) {
             tickClientAnim(player);
         }
 
-        // 2) 运行期合法性复查（与 CrawlAction.tick 对称）
         if (!isPeeking(player)) return;
-        if (passiveAllowed(player)) return;
 
-        if (player.level().isClientSide) {
-            if (SlideClientHelper.isLocalPlayer(player)) {
-                stop(player);
-                NetworkHandler.sendPeekSet(Dir.NONE);
+        // 耐力消耗只由「该玩家的权威持有者」执行：
+        //   - 服务端：消耗所有探头玩家的耐力
+        //   - 客户端：只为本地玩家消耗（远端玩家的耐力由服务端广播驱动）
+        // 避免双端对同一玩家重复扣减。
+        boolean isStaminaOwner = !player.level().isClientSide
+                              || SlideClientHelper.isLocalPlayer(player);
+        if (!isStaminaOwner) return;
+
+        // 持续耐力消耗
+        boolean staminaExhausted = false;
+        if (MoveConfig.INSTANCE.staminaEnabled.get()) {
+            double perTick = MoveConfig.INSTANCE.staminaPeekCostPerTick.get();
+            if (perTick > 0.0D) {
+                StaminaTracker.INSTANCE.consumeUpTo(player, perTick);
+                if (StaminaTracker.INSTANCE.get(player) <= 0.0D) {
+                    staminaExhausted = true;
+                }
             }
+        }
+
+        if (!staminaExhausted && passiveAllowed(player)) return;
+
+        // 退出：耐力耗尽 或 环境不再允许
+        if (player.level().isClientSide) {
+            // 只可能是本地玩家（前面的 isStaminaOwner 已保证）
+            stop(player);
+            NetworkHandler.sendPeekSet(Dir.NONE);
         } else {
             stop(player);
             NetworkHandler.broadcastPeekState(player, Dir.NONE);
@@ -457,14 +415,14 @@ public final class PeekAction {
     // ============================================================
     public boolean canPeek(Player p) {
         if (!passiveAllowed(p)) return false;
-        if (SlideAction.INSTANCE.isSliding(p)) return false;
-        if (CrawlAction.INSTANCE.isCrawling(p)) return false;
+        // 互斥：集中判定
+        if (ActionExclusivity.isAnyOtherActive(p, ActionExclusivity.Action.PEEK)) {
+            return false;
+        }
         return true;
     }
 
-    /** 与启动条件共享的被动合法性检查：开关、状态、环境。 */
     private boolean passiveAllowed(Player p) {
-        if (!MoveConfig.INSTANCE.enabled.get()) return false;
         if (!MoveConfig.INSTANCE.peekEnabled.get()) return false;
         if (p.isSpectator() || p.isDeadOrDying()) return false;
         if (p.isPassenger() || p.isSleeping() || p.isFallFlying()) return false;
@@ -483,14 +441,6 @@ public final class PeekAction {
         return true;
     }
 
-    /**
-     * S2C 权威同步：直接写入状态，不走 {@link #canPeek}。
-     *
-     * <p>为什么不能用 {@link #trySet}：{@code trySet} 会做互斥检查
-     * （滑铲/趴下），而客户端的滑铲/趴下预测状态常比服务端滞后几 tick，
-     * 会导致合法的服务端探头广播被本地误拒。这里以服务端为权威，
-     * 收到广播后立即写入，并清理本地对同一玩家的竞争预测状态。
-     */
     public void applyRemoteState(Player player, Dir dir) {
         if (!player.level().isClientSide) return;
 
@@ -500,10 +450,9 @@ public final class PeekAction {
 
         dirs(player).put(id, dir);
 
-        // 互斥：服务端权威决定进入探头 → 清掉本地预测的滑铲 / 趴下
         if (dir != Dir.NONE) {
-            SlideAction.INSTANCE.stop(player);
-            CrawlAction.INSTANCE.stop(player);
+            // 互斥：远端进入探头 → 清掉其它本地预测
+            ActionExclusivity.stopOthers(player, ActionExclusivity.Action.PEEK);
         }
     }
 

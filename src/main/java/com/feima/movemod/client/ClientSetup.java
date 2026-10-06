@@ -18,7 +18,7 @@ public final class ClientSetup {
     @SubscribeEvent
     public static void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {
         event.register(KeyBindings.SLIDE);
-        event.register(KeyBindings.CRAWL);
+        event.register(KeyBindings.PRONE);
         event.register(KeyBindings.PEEK_LEFT);
         event.register(KeyBindings.PEEK_RIGHT);
     }

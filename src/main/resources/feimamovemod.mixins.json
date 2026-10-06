@@ -20,7 +20,10 @@
   "client": [
     "PeekCameraMixin",
     "PeekFullBodyMixin",
-    "PeekHitboxRenderMixin"
+    "PeekHitboxRenderMixin",
+    "ProneArmPoseMixin",
+    "SlideFullBodyMixin",
+    "SlidePartPoseMixin"
   ],
   "injectors": {
     "defaultRequire": 1

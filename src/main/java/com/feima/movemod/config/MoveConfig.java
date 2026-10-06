@@ -18,15 +18,35 @@ public final class MoveConfig {
     // ============================================================
     // 字段
     // ============================================================
-    // ---- general ----
-    public final ForgeConfigSpec.BooleanValue enabled;
+    // ---- 顶层：通用开关（无分类） ----
     public final ForgeConfigSpec.BooleanValue slideEnabled;
-    public final ForgeConfigSpec.BooleanValue crawlEnabled;
+    public final ForgeConfigSpec.BooleanValue proneEnabled;
     public final ForgeConfigSpec.BooleanValue peekEnabled;
+
+    // ---- stamina（顶层，跨动作） ----
+    public final ForgeConfigSpec.BooleanValue staminaEnabled;
+    public final ForgeConfigSpec.DoubleValue  staminaMax;
+    public final ForgeConfigSpec.DoubleValue  staminaRegenPerTick;
+    public final ForgeConfigSpec.IntValue     staminaRegenDelayTicks;
+
+    // ---- stamina.slide ----
+    public final ForgeConfigSpec.BooleanValue staminaSlideAllowWhenEmpty;
+    public final ForgeConfigSpec.DoubleValue  staminaSlideCostOnStart;
+    public final ForgeConfigSpec.DoubleValue  staminaSlideCostPerTick;
+    public final ForgeConfigSpec.DoubleValue  staminaSlideLevel1Threshold;
+    public final ForgeConfigSpec.DoubleValue  staminaSlideLevel2Threshold;
+    public final ForgeConfigSpec.DoubleValue  staminaSlideLevel2Speed;
+    public final ForgeConfigSpec.DoubleValue  staminaSlideLevel3Speed;
+
+    // ---- stamina.dive ----
+    public final ForgeConfigSpec.DoubleValue  staminaDiveCostOnStart;
+    public final ForgeConfigSpec.DoubleValue  staminaDiveCostPerTick;
+
+    // ---- stamina.peek ----
+    public final ForgeConfigSpec.DoubleValue  staminaPeekCostPerTick;
 
     // ---- slide ----
     public final ForgeConfigSpec.BooleanValue requireSprint;
-    public final ForgeConfigSpec.BooleanValue allowWhenEmpty;
     public final ForgeConfigSpec.BooleanValue slideParticle;
 
     public final ForgeConfigSpec.DoubleValue startSpeed;
@@ -45,17 +65,6 @@ public final class MoveConfig {
     public final ForgeConfigSpec.DoubleValue  slideJumpUp;
     public final ForgeConfigSpec.BooleanValue slideJumpFollowLook;
 
-    public final ForgeConfigSpec.BooleanValue staminaEnabled;
-    public final ForgeConfigSpec.DoubleValue  staminaMax;
-    public final ForgeConfigSpec.DoubleValue  staminaCostOnStart;
-    public final ForgeConfigSpec.DoubleValue  staminaCostPerTick;
-    public final ForgeConfigSpec.DoubleValue  staminaRegenPerTick;
-    public final ForgeConfigSpec.IntValue     staminaRegenDelayTicks;
-    public final ForgeConfigSpec.DoubleValue  staminaLevel1Threshold;
-    public final ForgeConfigSpec.DoubleValue  staminaLevel2Threshold;
-    public final ForgeConfigSpec.DoubleValue  staminaLevel2Speed;
-    public final ForgeConfigSpec.DoubleValue  staminaLevel3Speed;
-
     public final ForgeConfigSpec.BooleanValue hungerEnabled;
     public final ForgeConfigSpec.DoubleValue  hungerPerTick;
 
@@ -63,7 +72,17 @@ public final class MoveConfig {
     public final ForgeConfigSpec.DoubleValue hitboxHeight;
     public final ForgeConfigSpec.DoubleValue eyeHeight;
 
+    // ---- prone / dive ----
+    public final ForgeConfigSpec.BooleanValue diveEnabled;
+    public final ForgeConfigSpec.BooleanValue diveRequireSprint;
+    public final ForgeConfigSpec.DoubleValue  diveHorizontalSpeed;
+    public final ForgeConfigSpec.DoubleValue  diveFriction;
+    public final ForgeConfigSpec.DoubleValue  diveEndSpeed;
+    public final ForgeConfigSpec.DoubleValue  diveUpBoost;
+    public final ForgeConfigSpec.BooleanValue diveConvertToProneOnLand;
+
     // ---- peek ----
+    public final ForgeConfigSpec.BooleanValue peekLastPressWins;
     public final ForgeConfigSpec.DoubleValue peekDistance;
     public final ForgeConfigSpec.DoubleValue peekAngleThirdPerson;
     public final ForgeConfigSpec.DoubleValue peekAngleFirstPerson;
@@ -81,35 +100,139 @@ public final class MoveConfig {
     private MoveConfig(ForgeConfigSpec.Builder b) {
 
         // ============================================================
-        // general
+        // 顶层：通用开关（无分类）
         // ============================================================
-        b.comment("General", "通用").push("general");
-
-        enabled = b
-                .comment("Master switch for the whole mod.",
-                         "模组总开关，关闭后所有动作（滑铲 / 趴下 / 探头）均不可用。")
-                .translation("feimamovemod.configuration.general.enabled")
-                .define("enabled", true);
-
         slideEnabled = b
                 .comment("Enable sliding.", "是否启用滑铲。")
-                .translation("feimamovemod.configuration.general.slideEnabled")
+                .translation("feimamovemod.configuration.slideEnabled")
                 .define("slideEnabled", true);
 
-        crawlEnabled = b
-                .comment("Enable crawling.", "是否启用趴下。")
-                .translation("feimamovemod.configuration.general.crawlEnabled")
-                .define("crawlEnabled", true);
+        proneEnabled = b
+                .comment("Enable prone. Turning this off also disables dive.",
+                         "是否启用趴下。关闭后飞扑也会一并关闭。")
+                .translation("feimamovemod.configuration.proneEnabled")
+                .define("proneEnabled", true);
 
         peekEnabled = b
                 .comment("Enable peeking.", "是否启用探头。")
-                .translation("feimamovemod.configuration.general.peekEnabled")
+                .translation("feimamovemod.configuration.peekEnabled")
                 .define("peekEnabled", true);
 
-        b.pop(); // general
+        // ============================================================
+        // stamina（顶层）
+        // ============================================================
+        b.comment("Stamina", "耐力",
+                  "Shared stamina system. Consumed by slide, dive and peek.",
+                  "跨动作共用的耐力系统。滑铲、飞扑、探头消耗；趴下不消耗。")
+                .push("stamina");
+
+        staminaEnabled = b
+                .comment("Enable stamina.", "是否启用耐力。")
+                .translation("feimamovemod.configuration.stamina.enabled")
+                .define("enabled", true);
+
+        staminaMax = b
+                .comment("Maximum stamina.", "耐力上限。")
+                .translation("feimamovemod.configuration.stamina.max")
+                .defineInRange("max", 100.0D, 1.0D, 10000.0D);
+
+        staminaRegenPerTick = b
+                .comment("Per-tick regeneration.", "每 tick 恢复量。")
+                .translation("feimamovemod.configuration.stamina.regenPerTick")
+                .defineInRange("regenPerTick", 0.6D, 0.0D, 100.0D);
+
+        staminaRegenDelayTicks = b
+                .comment("Delay before regeneration starts after the last consumption (ticks).",
+                         "停止消耗后多久开始恢复（tick）。")
+                .translation("feimamovemod.configuration.stamina.regenDelayTicks")
+                .defineInRange("regenDelayTicks", 20, 0, 400);
+
+        // ---------- stamina.slide ----------
+        b.comment("Slide stamina", "滑铲耐力").push("slide");
+
+        staminaSlideAllowWhenEmpty = b
+                .comment("If true, sliding is allowed at zero stamina, but speed drops to tier 3 (slowest).",
+                         "If false, insufficient stamina rejects the slide outright.",
+                         "true 时耐力为 0 也能滑铲，速度降为三档（最慢）。",
+                         "false 时耐力不足直接拒绝滑铲。")
+                .translation("feimamovemod.configuration.stamina.slide.allowWhenEmpty")
+                .define("allowWhenEmpty", true);
+
+        staminaSlideCostOnStart = b
+                .comment("One-time cost when starting a slide.",
+                         "启动滑铲时一次性消耗。")
+                .translation("feimamovemod.configuration.stamina.slide.costOnStart")
+                .defineInRange("costOnStart", 20.0D, 0.0D, 10000.0D);
+
+        staminaSlideCostPerTick = b
+                .comment("Per-tick cost while sliding.",
+                         "滑铲期间每 tick 消耗。")
+                .translation("feimamovemod.configuration.stamina.slide.costPerTick")
+                .defineInRange("costPerTick", 0.4D, 0.0D, 100.0D);
+
+        b.comment("Tier thresholds (stamina ratio 0~1).",
+                  "档位阈值（耐力比例 0~1）。").push("thresholds");
+
+        staminaSlideLevel1Threshold = b
+                .comment("Tier-1 threshold.", "一档阈值。")
+                .translation("feimamovemod.configuration.stamina.slide.thresholds.level1")
+                .defineInRange("level1", 0.6D, 0.0D, 1.0D);
+
+        staminaSlideLevel2Threshold = b
+                .comment("Tier-2 threshold.", "二档阈值。")
+                .translation("feimamovemod.configuration.stamina.slide.thresholds.level2")
+                .defineInRange("level2", 0.3D, 0.0D, 1.0D);
+
+        b.pop(); // thresholds
+
+        b.comment("Speed per tier (blocks/tick). Tier-1 speed is slide.startSpeed.",
+                  "各档速度（方块/tick）。一档速度见 slide.startSpeed。").push("speeds");
+
+        staminaSlideLevel2Speed = b
+                .comment("Tier-2 speed.", "二档速度。")
+                .translation("feimamovemod.configuration.stamina.slide.speeds.level2Speed")
+                .defineInRange("level2Speed", 0.45D, 0.0D, 5.0D);
+
+        staminaSlideLevel3Speed = b
+                .comment("Tier-3 speed.", "三档速度。")
+                .translation("feimamovemod.configuration.stamina.slide.speeds.level3Speed")
+                .defineInRange("level3Speed", 0.3D, 0.0D, 5.0D);
+
+        b.pop(); // speeds
+        b.pop(); // slide (stamina)
+
+        // ---------- stamina.dive ----------
+        b.comment("Dive stamina", "飞扑耐力").push("dive");
+
+        staminaDiveCostOnStart = b
+                .comment("One-time cost when starting a dive.",
+                         "启动飞扑时一次性消耗。")
+                .translation("feimamovemod.configuration.stamina.dive.costOnStart")
+                .defineInRange("costOnStart", 10.0D, 0.0D, 10000.0D);
+
+        staminaDiveCostPerTick = b
+                .comment("Per-tick cost while diving.",
+                         "飞扑期间每 tick 消耗。")
+                .translation("feimamovemod.configuration.stamina.dive.costPerTick")
+                .defineInRange("costPerTick", 0.5D, 0.0D, 100.0D);
+
+        b.pop(); // dive (stamina)
+
+        // ---------- stamina.peek ----------
+        b.comment("Peek stamina", "探头耐力").push("peek");
+
+        staminaPeekCostPerTick = b
+                .comment("Per-tick cost while peeking. Peek auto-exits at zero stamina.",
+                         "探头期间每 tick 消耗。耐力耗尽自动退出探头。")
+                .translation("feimamovemod.configuration.stamina.peek.costPerTick")
+                .defineInRange("costPerTick", 0.3D, 0.0D, 100.0D);
+
+        b.pop(); // peek (stamina)
+
+        b.pop(); // stamina
 
         // ============================================================
-        // slide
+        // slide（不含耐力，仅滑铲本身）
         // ============================================================
         b.comment("Slide", "滑铲").push("slide");
 
@@ -118,14 +241,6 @@ public final class MoveConfig {
                          "true 时需要疾跑状态才能触发滑铲。")
                 .translation("feimamovemod.configuration.slide.requireSprint")
                 .define("requireSprint", false);
-
-        allowWhenEmpty = b
-                .comment("If true, sliding is allowed at zero stamina, but speed drops to tier 3 (slowest).",
-                         "If false, insufficient stamina rejects the slide outright.",
-                         "true 时耐力为 0 也能滑铲，速度降为三档（最慢）。",
-                         "false 时耐力不足直接拒绝滑铲。")
-                .translation("feimamovemod.configuration.slide.allowWhenEmpty")
-                .define("allowWhenEmpty", true);
 
         slideParticle = b
                 .comment("If true, spawn sprint-like ground particles while sliding.",
@@ -195,7 +310,7 @@ public final class MoveConfig {
                 .translation("feimamovemod.configuration.slide.steering.turnSpeed")
                 .defineInRange("turnSpeed", 3.0D, 0.0D, 30.0D);
 
-        b.pop();
+        b.pop(); // steering
 
         b.comment("Slide jump", "滑铲跳").push("jump");
 
@@ -217,73 +332,7 @@ public final class MoveConfig {
                 .translation("feimamovemod.configuration.slide.jump.slideJumpFollowLook")
                 .define("slideJumpFollowLook", true);
 
-        b.pop();
-
-        b.comment("Stamina", "耐力").push("stamina");
-
-        staminaEnabled = b
-                .comment("Enable stamina.", "是否启用耐力。")
-                .translation("feimamovemod.configuration.slide.stamina.enabled")
-                .define("enabled", true);
-
-        staminaMax = b
-                .comment("Maximum stamina.", "耐力上限。")
-                .translation("feimamovemod.configuration.slide.stamina.max")
-                .defineInRange("max", 100.0D, 1.0D, 10000.0D);
-
-        staminaCostOnStart = b
-                .comment("One-time cost when starting a slide.",
-                         "启动时一次性消耗。")
-                .translation("feimamovemod.configuration.slide.stamina.costOnStart")
-                .defineInRange("costOnStart", 20.0D, 0.0D, 10000.0D);
-
-        staminaCostPerTick = b
-                .comment("Per-tick cost while sliding.",
-                         "滑铲期间每 tick 消耗。")
-                .translation("feimamovemod.configuration.slide.stamina.costPerTick")
-                .defineInRange("costPerTick", 0.4D, 0.0D, 100.0D);
-
-        staminaRegenPerTick = b
-                .comment("Per-tick regeneration.", "每 tick 恢复量。")
-                .translation("feimamovemod.configuration.slide.stamina.regenPerTick")
-                .defineInRange("regenPerTick", 0.6D, 0.0D, 100.0D);
-
-        staminaRegenDelayTicks = b
-                .comment("Delay before regeneration starts after the last consumption (ticks).",
-                         "停止消耗后多久开始恢复（tick）。")
-                .translation("feimamovemod.configuration.slide.stamina.regenDelayTicks")
-                .defineInRange("regenDelayTicks", 20, 0, 400);
-
-        b.comment("Tier thresholds (stamina ratio 0~1).",
-                  "档位阈值（耐力比例 0~1）。").push("thresholds");
-
-        staminaLevel1Threshold = b
-                .comment("Tier-1 threshold.", "一档阈值。")
-                .translation("feimamovemod.configuration.slide.stamina.thresholds.level1")
-                .defineInRange("level1", 0.6D, 0.0D, 1.0D);
-
-        staminaLevel2Threshold = b
-                .comment("Tier-2 threshold.", "二档阈值。")
-                .translation("feimamovemod.configuration.slide.stamina.thresholds.level2")
-                .defineInRange("level2", 0.3D, 0.0D, 1.0D);
-
-        b.pop();
-
-        b.comment("Speed per tier (blocks/tick).",
-                  "各档速度（方块/tick）。").push("speeds");
-
-        staminaLevel2Speed = b
-                .comment("Tier-2 speed.", "二档速度。")
-                .translation("feimamovemod.configuration.slide.stamina.speeds.level2Speed")
-                .defineInRange("level2Speed", 0.45D, 0.0D, 5.0D);
-
-        staminaLevel3Speed = b
-                .comment("Tier-3 speed.", "三档速度。")
-                .translation("feimamovemod.configuration.slide.stamina.speeds.level3Speed")
-                .defineInRange("level3Speed", 0.3D, 0.0D, 5.0D);
-
-        b.pop(); // speeds
-        b.pop(); // stamina
+        b.pop(); // jump
 
         hungerEnabled = b
                 .comment("Enable hunger consumption while sliding.",
@@ -319,9 +368,69 @@ public final class MoveConfig {
         b.pop(); // slide
 
         // ============================================================
+        // prone / dive
+        // ============================================================
+        b.comment("Prone and Dive", "趴下与飞扑").push("prone");
+
+        b.comment("Dive", "飞扑").push("dive");
+
+        diveEnabled = b
+                .comment("Enable dive. Requires proneEnabled to be true.",
+                         "是否启用飞扑。总开关 proneEnabled 关闭时此项无效。")
+                .translation("feimamovemod.configuration.prone.dive.enabled")
+                .define("enabled", true);
+
+        diveRequireSprint = b
+                .comment("If true, dive requires sprinting.",
+                         "触发飞扑是否必须疾跑。")
+                .translation("feimamovemod.configuration.prone.dive.requireSprint")
+                .define("requireSprint", true);
+
+        diveHorizontalSpeed = b
+                .comment("Initial horizontal speed (blocks/tick).",
+                         "飞扑水平初速（方块/tick）。")
+                .translation("feimamovemod.configuration.prone.dive.horizontalSpeed")
+                .defineInRange("horizontalSpeed", 0.6D, 0.0D, 5.0D);
+
+        diveFriction = b
+                .comment("Per-tick horizontal speed decay factor.",
+                         "每 tick 水平速度衰减系数。")
+                .translation("feimamovemod.configuration.prone.dive.friction")
+                .defineInRange("friction", 0.9D, 0.0D, 1.0D);
+
+        diveEndSpeed = b
+                .comment("End speed; dive stops when horizontal speed drops to or below this value.",
+                         "末速度，水平速度降到 ≤ 此值则结束飞扑。")
+                .translation("feimamovemod.configuration.prone.dive.endSpeed")
+                .defineInRange("endSpeed", 0.2D, 0.0D, 5.0D);
+
+        diveUpBoost = b
+                .comment("Upward boost applied at dive start (blocks/tick).",
+                         "飞扑时施加的向上初速（方块/tick）。")
+                .translation("feimamovemod.configuration.prone.dive.upBoost")
+                .defineInRange("upBoost", 0.32D, 0.0D, 2.0D);
+
+        diveConvertToProneOnLand = b
+                .comment("If true, dive converts to prone when it ends on solid ground.",
+                         "飞扑在坚实地面结束时是否自动转为趴下。")
+                .translation("feimamovemod.configuration.prone.dive.convertToProneOnLand")
+                .define("convertToProneOnLand", true);
+
+        b.pop(); // dive
+        b.pop(); // prone
+
+        // ============================================================
         // peek
         // ============================================================
         b.comment("Peek", "探头").push("peek");
+
+        peekLastPressWins = b
+                .comment("If true, when both peek keys are held, the most recently pressed one wins.",
+                         "If false, holding both cancels out and returns to standing.",
+                         "true 时同时按住左右探头键，以最近按下的方向为准；",
+                         "false 时同时按住两个键会互相抵消，变回站立。")
+                .translation("feimamovemod.configuration.peek.lastPressWins")
+                .define("lastPressWins", true);
 
         peekDistance = b
                 .comment("Lateral offset of the whole body (blocks).",
